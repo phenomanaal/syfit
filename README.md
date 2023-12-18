@@ -1,10 +1,17 @@
 Fitness tracking app for weightlifting, including goal tracking
+
 images/movements sourced from exrx
+
 mobile and web
+
 web - Javascript (Svelte? maybe)
+
 android - Kotlin
+
 iOS - Swift
+
 API - Django
+
 Database - mySQL
 
 Step 1: design database structure based on functionality, entities, and features
@@ -26,10 +33,13 @@ Step 6: Browser Front End (JS + Framework?)
 Step 6.5: testing
 
 Step 7: iOS (Swift)
+
 Step 7.5: testing
+
 Step 8: Android (Kotlin)
+
 Step 8.5: testing
 
 notes:
-integrate secure coding practices
-unit testing throughout
+-integrate secure coding practices
+-unit testing throughout
