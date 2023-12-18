@@ -13,7 +13,7 @@ Step 3: what types of queries
 Step 4: build database interface (Python, sqlalchemy)
 Step 4.5: testing
 Step 5: API to interact with database interface (Django)
-Step 5.5: testing
+Step 5.5: testing (RESTclient VSCode)
 Step 6: Browser Front End (JS + Framework?)
 Step 6.5: testing
 Step 7: iOS (Swift)
