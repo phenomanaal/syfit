@@ -14,7 +14,7 @@ API - Django
 
 Database - mySQL
 
-Step 1: design database structure based on functionality, entities, and features
+Step 1: design database structure based on functionality, entities, and features - [DONE](https://lucid.app/lucidchart/c0aad5fa-5bb7-4591-a7f3-d3564a27d0d6/edit?viewport_loc=-1636%2C-986%2C1867%2C1168%2C0_0&invitationId=inv_4a4db137-d1b7-4c66-b20b-95551b0d117f)
 
 Step 2: sample data in database
 
