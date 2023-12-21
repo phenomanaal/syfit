@@ -18,11 +18,11 @@ Step 1: design database structure based on functionality, entities, and features
 
 Step 1.5: create base schema script and run - DONE
 
-Step 2: sample data in database
+Step 2: what types of queries?
 
-Step 3: what types of queries
+Step 3: build database interface (Python, sqlalchemy)
 
-Step 4: build database interface (Python, sqlalchemy)
+Step 4: sample data in database
 
 Step 4.5: testing
 

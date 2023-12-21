@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS routine (
     id int NOT NULL AUTO_INCREMENT,
     user_id int NOT NULL,
     num_days int,
+    is_current boolean,
     CONSTRAINT routine_pk PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES user(id)
 );
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS routine_exercise (
 CREATE TABLE IF NOT EXISTS exercise (
     id int NOT NULL AUTO_INCREMENT,
     exercise_name varchar(100) NOT NULL,
+    reference_link varchar(255),
     body_part varchar(50),
     secondary_body_part varchar(50),
     rep_type varchar(4),
