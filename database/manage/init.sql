@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS user (
     first_name varchar(25) NOT NULL,
     last_name varchar(25) NOT NULL,
     username varchar(25) NOT NULL,
-    DOB varchar(10) NOT NULL,
+    DOB char(10) NOT NULL,
     CONSTRAINT user_pk PRIMARY KEY (id)
 );
 

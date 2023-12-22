@@ -1,3 +1,5 @@
 notes.txt
 db_password.txt
 *.ipynb
+*.local.conf
+__pycache__/
