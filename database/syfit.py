@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, Float, String, Sequence, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, Float, String, Sequence, ForeignKey, Boolean, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import config
@@ -11,7 +11,7 @@ class User(Base):
 
     id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
     first_name = Column(String(25), nullable=False)
-    last_name = Column(String(25))
+    last_name = Column(String(25), nullable=False)
     username = Column(String(25), nullable=False)
     DOB = Column(String(10), nullable=False)
 
@@ -20,11 +20,65 @@ class Measurement(Base):
     __tablename__ = 'measurement'
 
     id = Column(Integer, Sequence('measurement_id_seq'), primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     height = Column(Float)
     height_units = Column(String(3))
     weight = Column(Float)
     weight_units = Column(String(3))
+
+
+class Routine(Base):
+    __tablename__ = "routine"
+
+    id = Column(Integer, Sequence('routine_id_seq'), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    num_days = Column(Integer)
+    is_current = Column(Boolean)
+
+
+class RoutineDay(Base):
+    __tablename__ = "routine_day"
+
+    id = Column(Integer, Sequence('routine_day_id_seq'), primary_key=True)
+    routine_id = Column(Integer, ForeignKey("routine.id"), nullable=False)
+    day_idx = Column(Integer)
+    routine_day_name = Column(String(10))
+    day_of_week = Column(String(3))
+
+
+class Exercise(Base):
+    __tablename__ = "exercise"
+
+    id = Column(Integer, Sequence('exercise_id_seq'), primary_key=True)
+    exercise_name = Column(String(100), nullable=False)
+    reference_link = Column(String(255))
+    body_part = Column(String(50))
+    secondary_body_part = Column(String(50))
+    rep_type = Column(String(4))
+
+
+class RoutineExercise(Base):
+    __tablename__ = "routine_exerise"
+
+    id = Column(Integer, Sequence('routine_exercise_id_seq'), primary_key=True)
+    day_id = Column(Integer, ForeignKey("routine_day.id"), nullable=False)
+    exercise_id = Column(Integer, ForeignKey("exercise.id"), nullable=False)
+    exercise_idx = Column(Integer, nullable=False)
+    num_sets = Column(Integer)
+    default_reps = Column(Integer)
+    default_time = Column(Float)
+
+
+class ExerciseLog(Base):
+    __tablename__ = "exercise_log"
+
+    id = Column(Integer, Sequence('exercise_log_id_seq'), primary_key=True)
+    routine_exercise_id = Column(
+        Integer, ForeignKey("routine_exericse.id"), nullable=False)
+    time_stamp = Column(TIMESTAMP, nullable=False)
+    set_num = Column(Integer)
+    num_reps = Column(Integer)
+    time_duration = Column(Float)
 
 
 class DatabaseInterface:
@@ -35,8 +89,9 @@ class DatabaseInterface:
     def create_tables(self):
         Base.metadata.create_all(self.engine)
 
-    def add_user(self, name, age):
-        user = User(name=name, age=age)
+    def add_user(self, first_name, last_name, username, DOB):
+        user = User(first_name=first_name,
+                    last_name=last_name, username=username, DOB=DOB)
         session = self.Session()
         session.add(user)
         session.commit()
@@ -53,14 +108,6 @@ class DatabaseInterface:
         user = session.query(User).filter(User.id == user_id).first()
         session.close()
         return user
-
-    def update_user_age(self, user_id, new_age):
-        session = self.Session()
-        user = session.query(User).filter(User.id == user_id).first()
-        if user:
-            user.age = new_age
-            session.commit()
-        session.close()
 
     def delete_user(self, user_id):
         session = self.Session()

@@ -41,6 +41,16 @@ CREATE TABLE IF NOT EXISTS routine_day (
     FOREIGN KEY (routine_id) REFERENCES routine(id)
 );
 
+CREATE TABLE IF NOT EXISTS exercise (
+    id int NOT NULL AUTO_INCREMENT,
+    exercise_name varchar(100) NOT NULL,
+    reference_link varchar(255),
+    body_part varchar(50),
+    secondary_body_part varchar(50),
+    rep_type varchar(4),
+    CONSTRAINT exercise_pk PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS routine_exercise (
     id int NOT NULL AUTO_INCREMENT,
     day_id int NOT NULL,
@@ -50,17 +60,8 @@ CREATE TABLE IF NOT EXISTS routine_exercise (
     default_reps int,
     default_time float,
     CONSTRAINT routine_exercise_pk PRIMARY KEY (id),
-    FOREIGN KEY (day_id) REFERENCES routine_day(id)
-);
-
-CREATE TABLE IF NOT EXISTS exercise (
-    id int NOT NULL AUTO_INCREMENT,
-    exercise_name varchar(100) NOT NULL,
-    reference_link varchar(255),
-    body_part varchar(50),
-    secondary_body_part varchar(50),
-    rep_type varchar(4),
-    CONSTRAINT exercise_pk PRIMARY KEY (id)
+    FOREIGN KEY (day_id) REFERENCES routine_day(id),
+    FOREIGN KEY (exercise_id) REFERENCES exercise(id)
 );
 
 CREATE TABLE IF NOT EXISTS exercise_log (
