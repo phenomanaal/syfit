@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS user (
     last_name varchar(25) NOT NULL,
     username varchar(25) NOT NULL,
     DOB char(10) NOT NULL,
-    CONSTRAINT user_pk PRIMARY KEY (id)
+    CONSTRAINT user_pk PRIMARY KEY (id),
+    UNIQUE(username)
 );
 
 CREATE TABLE IF NOT EXISTS measurement (

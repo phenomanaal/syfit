@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, Float, String, Sequence, ForeignKey, Boolean, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 import config
 
 Base = declarative_base()
@@ -94,7 +95,13 @@ class DatabaseInterface:
                     last_name=last_name, username=username, DOB=DOB)
         session = self.Session()
         session.add(user)
-        session.commit()
+
+        try:
+            session.commit()
+        except IntegrityError as e:
+            if 'duplicate' in e.args[0].lower():
+                print(f"username '{e.params.get('username')}' already exists.")
+
         session.close()
 
     def get_all_users(self):
@@ -106,6 +113,12 @@ class DatabaseInterface:
     def get_user_by_id(self, user_id):
         session = self.Session()
         user = session.query(User).filter(User.id == user_id).first()
+        session.close()
+        return user
+
+    def get_user_by_username(self, username):
+        session = self.Session()
+        user = session.query(User).filter(User.username == username).first()
         session.close()
         return user
 
