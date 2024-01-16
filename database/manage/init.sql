@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS user (
 
 CREATE TABLE IF NOT EXISTS measurement (
     id int NOT NULL AUTO_INCREMENT,
+    measurement_time timestamp NOT NULL,
     user_id int NOT NULL,
     height float NOT NULL,
     height_units char(2) NOT NULL,

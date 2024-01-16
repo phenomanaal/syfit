@@ -34,10 +34,11 @@ class Measurement(Base):
     __tablename__ = "measurement"
 
     id = Column(Integer, Sequence("measurement_id_seq"), primary_key=True)
+    measurement_time = Column(TIMESTAMP, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     height = Column(Float)
     height_units = Column(String(3))
-    weight = Column(Float)
+    body_weight = Column(Float)
     weight_units = Column(String(3))
 
 
@@ -157,33 +158,102 @@ class DatabaseInterface:
     def change_username_by_id(self, user_id: int, new_username: str) -> User:
         session = self.Session()
 
-        user = (
-            session.query(User)
-            .filter(User.id == user_id)
-            .update(
-                {"username": new_username, "last_updated_username": datetime.utcnow()}
-            )
-        )
-        session.commit()
-
         user = self.get_user_by_id(user_id)
+        hours_since_username_change = (
+            datetime.utcnow() - user.last_updated_username
+        ).total_seconds() / (60**2)
+
+        if hours_since_username_change > 24:
+            user = (
+                session.query(User)
+                .filter(User.id == user_id)
+                .update(
+                    {
+                        "username": new_username,
+                        "last_updated_username": datetime.utcnow(),
+                    }
+                )
+            )
+            session.commit()
+
+            user = self.get_user_by_id(user_id)
+        else:
+            return user, {
+                "message": "username was updated less than 24 hours ago. Please wait to update username again."
+            }
         return user
 
     def change_username_by_username(self, username: str, new_username: str) -> User:
         session = self.Session()
 
-        user = (
-            session.query(User)
-            .filter(User.username == username)
-            .update(
-                {"username": new_username, "last_updated_username": datetime.utcnow()}
-            )
-        )
-        session.commit()
-
         user = self.get_user_by_username(username)
+        hours_since_username_change = (
+            datetime.utcnow() - user.last_updated_username
+        ).total_seconds() / (60**2)
+
+        if hours_since_username_change > 24:
+            user = (
+                session.query(User)
+                .filter(User.username == username)
+                .update(
+                    {
+                        "username": new_username,
+                        "last_updated_username": datetime.utcnow(),
+                    }
+                )
+            )
+            session.commit()
+
+            user = self.get_user_by_username(username)
+
+        else:
+            return user, {
+                "message": "username was updated less than 24 hours ago. Please wait to update username again."
+            }
         return user
 
+    def add_measurement(
+        self,
+        user_id: int,
+        height: float,
+        height_units: str,
+        body_weight: float,
+        weight_units: str,
+        measurement_time: datetime=None
+    ) -> Measurement:
+        '''
+        TODO: insert functionality that determines
+        if the same EXACT measurements were inputted
+        within 24 hours, throw duplicate error
+        '''
+
+        if measurement_time is None or measurement_time > datetime.utcnow():
+            measurement_time = datetime.utcnow()
+
+        measurement = Measurement(
+            measurement_time=measurement_time,
+            user_id=user_id,
+            height=height,
+            height_units=height_units,
+            body_weight=body_weight,
+            weight_units=weight_units,
+        )
+
+        session = self.Session()
+        session.add(measurement)
+        session.commit()
+        id = measurement.id
+        session.close()
+        
+        measurement = self.get_measurement_by_id(id)
+
+        return measurement
+    
+    def get_measurement_by_id(self, measurement_id: int) -> Measurement:
+        session = self.Session()
+        measurement = session.query(Measurement).filter(Measurement.id == measurement_id).first()
+        session.close()
+        return measurement
 
 # Example usage:
 if __name__ == "__main__":
