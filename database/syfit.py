@@ -1,3 +1,4 @@
+from typing import List
 from sqlalchemy import (
     create_engine,
     Column,
@@ -244,7 +245,7 @@ class DatabaseInterface:
         session.commit()
         id = measurement.id
         session.close()
-        
+
         measurement = self.get_measurement_by_id(id)
 
         return measurement
@@ -254,6 +255,15 @@ class DatabaseInterface:
         measurement = session.query(Measurement).filter(Measurement.id == measurement_id).first()
         session.close()
         return measurement
+    
+    def get_all_measurement_by_user(self, user_id:int) -> List[Measurement]:
+        """
+        ## TODO: allow filtering by date
+        """
+        session = self.Session()
+        measurements = session.query(Measurement).filter(Measurement.user_id == user_id).all()
+        session.close()
+        return measurements
 
 # Example usage:
 if __name__ == "__main__":
