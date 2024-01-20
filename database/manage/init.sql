@@ -17,16 +17,17 @@ CREATE TABLE IF NOT EXISTS measurement (
     id int NOT NULL AUTO_INCREMENT,
     measurement_time timestamp NOT NULL,
     user_id int NOT NULL,
-    height float NOT NULL,
-    height_units char(2) NOT NULL,
-    body_weight float NOT NULL,
-    weight_units char(3) NOT NULL,
+    height float,
+    height_units char(2),
+    body_weight float,
+    weight_units char(3),
     CONSTRAINT measurement_pk PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
 CREATE TABLE IF NOT EXISTS routine (
     id int NOT NULL AUTO_INCREMENT,
+    routine_name varchar(20) NOT NULL,
     user_id int NOT NULL,
     num_days int,
     is_current boolean,
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS routine_day (
     id int NOT NULL AUTO_INCREMENT,
     routine_id int NOT NULL,
     day_idx int,
-    routine_day_name varchar(10),
+    routine_day_name varchar(20),
     day_of_week varchar(3),
     CONSTRAINT routine_day_pk PRIMARY KEY (id),
     FOREIGN KEY (routine_id) REFERENCES routine(id)
