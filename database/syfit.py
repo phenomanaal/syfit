@@ -14,8 +14,9 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
+from datetime import datetime, timedelta
 import config
+from operator import itemgetter
 
 Base = declarative_base()
 
@@ -228,27 +229,58 @@ class DatabaseInterface:
         self, user_id: int, measurement_time: datetime = None, **kwargs
     ) -> Measurement:
         """
-        TODO: insert functionality that determines
-        if the same EXACT measurements were inputted
-        within 24 hours, throw duplicate error
-        TODO: create function that goes back and reads
-        the latest valid units and updates all null values with it
+        TODO: verify kwargs (maybe do on front end?)
         """
 
         if measurement_time is None or measurement_time > datetime.utcnow():
             measurement_time = datetime.utcnow()
 
-        measurement = Measurement(
-            measurement_time=measurement_time, user_id=user_id, **kwargs
-        )
+        query_dict = {k: v for k, v in kwargs.items()}
+        query_dict.update({"user_id": user_id})
+        measurement = self.get_measurement_by_fields(query_dict)
+        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
 
+        if measurement.measurement_time > (twenty_four_hours_ago):
+            print("These exact measurements have been entered less than 24 hours ago.")
+
+        if measurement is None or measurement.measurement_time > (
+            twenty_four_hours_ago
+        ):
+            measurement = Measurement(
+                measurement_time=measurement_time, user_id=user_id, **kwargs
+            )
+
+            session = self.Session()
+            session.add(measurement)
+            session.commit()
+            id = measurement.id
+            session.close()
+
+            measurement = self.get_measurement_by_id(id)
+            self.update_measurement_units_by_user(user_id)
+
+        return measurement
+
+    def update_measurement_units_by_user(self, user_id: int) -> Measurement:
+        measurements = self.get_all_measurement_by_user(1)
+        measurements = sorted(measurements, key=lambda x: x.measurement_time)
+        prev = measurements[0]
+
+        for m in measurements:
+            null_keys = [k for k, v in m.__dict__.items() if v is None and "unit" in v]
+
+            if len(null_keys) != 0:
+                update_measurement = {}
+                for k in null_keys:
+                    update_measurement[k] = prev.__dict__[k]
+                self.edit_measurement(m.id, **update_measurement)
+
+            prev = self.get_measurement_by_id(m.id)
+
+    def get_measurement_by_fields(self, **kwargs) -> Measurement:
         session = self.Session()
-        session.add(measurement)
-        session.commit()
-        id = measurement.id
+        measurement = session.query(Measurement).filter_by(**kwargs).first()
         session.close()
-
-        measurement = self.get_measurement_by_id(id)
 
         return measurement
 
@@ -261,12 +293,25 @@ class DatabaseInterface:
         return measurement
 
     def get_all_measurement_by_user(self, user_id: int) -> List[Measurement]:
-        """
-        ## TODO: allow filtering by date
-        """
+
         session = self.Session()
         measurements = (
             session.query(Measurement).filter(Measurement.user_id == user_id).all()
+        )
+        session.close()
+        return measurements
+
+    def get_all_measurements_by_user_by_date(
+        self, user_id: int, start_time: datetime, end_time: datetime = None
+    ):
+        session = self.Session()
+        measurements = (
+            session.query(Measurement)
+            .filter(
+                Measurement.user_id == user_id
+                and Measurement.measurement_time.date() == start_time.date()
+            )
+            .all()
         )
         session.close()
         return measurements
@@ -390,9 +435,6 @@ class DatabaseInterface:
         return routine
 
     def delete_routine(self, routine_id: int) -> None:
-        """
-        ## TODO: once routine_days are created go through and delete days
-        """
         session = self.Session()
         routine = self.get_routine_by_id(routine_id)
 
@@ -400,16 +442,15 @@ class DatabaseInterface:
             session.delete(routine)
             session.commit()
 
+            self.delete_days_by_routine_id(routine_id)
+
         session.close()
 
     ## Routine Days Methods
 
-    def add_routine_day(
-        self, routine_id: int, routine_day_name: str, day_of_week: str
-    ):
-        
+    def add_routine_day(self, routine_id: int, routine_day_name: str, day_of_week: str):
         routine_days = self.get_days_by_routine_id(routine_id)
-        day_idx = max([ d.day_idx for d in routine_days ]) + 1
+        day_idx = max([d.day_idx for d in routine_days]) + 1
         day = RoutineDay(
             routine_id=routine_id,
             day_idx=day_idx,
@@ -431,7 +472,7 @@ class DatabaseInterface:
         session.close()
 
         return routine_days
-    
+
     def reset_day_idxs(self, routine_id: int):
         routine_days = self.get_days_by_routine_id(routine_id)
 
@@ -439,12 +480,13 @@ class DatabaseInterface:
 
         for n, d in enumerate(routine_days):
             if d.day_idx != n:
-                session.query(RoutineDay).filter(RoutineDay.id == d.id).update( { "day_idx": n } )
+                session.query(RoutineDay).filter(RoutineDay.id == d.id).update(
+                    {"day_idx": n}
+                )
         session.commit()
-        session.close()                
-    
-    def delete_day_by_id(self, day_id: int) -> None:
+        session.close()
 
+    def delete_day_by_id(self, day_id: int) -> None:
         session = self.Session()
         day = session.query(RoutineDay).filter(RoutineDay.id == day_id).first()
         if day:
@@ -455,7 +497,6 @@ class DatabaseInterface:
         session.close()
 
     def delete_days_by_routine_id(self, routine_id: int) -> None:
-
         session = self.Session()
         session.query(RoutineDay).filter(RoutineDay.routine_id == routine_id).delete()
         session.commit()
