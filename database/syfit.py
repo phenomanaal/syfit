@@ -1,6 +1,7 @@
 from typing import List
 from sqlalchemy import (
     create_engine,
+    text,
     Column,
     Integer,
     Float,
