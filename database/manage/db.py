@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 import config
-import os
+import subprocess
 import pathlib
 
 class DBManager:
@@ -12,21 +13,6 @@ class DBManager:
         self.script_name = script_name
         self.conn_string = conn_string
         self.engine = create_engine(conn_string)
-
-    def init_db(self):
-
-        script_path = pathlib.Path(__file__).resolve().parent / self.script_name
-
-        with self.engine.connect() as con:
-            with open(script_path) as file:
-                query = text(file.read())
-                con.execute(query)
-
-        with open(script_path) as f:
-            f = f.read()
-        db_name = f.split('\n')[0].split(' ')[-1].replace(';','')
-
-        self.engine = create_engine('/'.join([self.conn_string, db_name]))
 
     def delete_db(self, db_name: str = "syfit"):
         with self.engine.connect() as con:

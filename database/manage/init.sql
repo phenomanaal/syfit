@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS user (
     username varchar(25) NOT NULL,
     DOB date NOT NULL,
     last_updated_username timestamp,
+    measurement_system varchar(10),
     CONSTRAINT user_pk PRIMARY KEY (id),
+    CONSTRAINT ck_user_measurement_system CHECK (measurement_system IN ("imperial", "metric")),
     UNIQUE(username)
 );
 
@@ -18,9 +20,7 @@ CREATE TABLE IF NOT EXISTS measurement (
     measurement_time timestamp NOT NULL,
     user_id int NOT NULL,
     height float,
-    height_units char(2),
     body_weight float,
-    weight_units char(3),
     CONSTRAINT measurement_pk PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES user(id)
 );

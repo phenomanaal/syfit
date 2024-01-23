@@ -1,4 +1,5 @@
 from typing import List
+import enum
 from sqlalchemy import (
     create_engine,
     text,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     Boolean,
     TIMESTAMP,
     DATE,
+    Enum,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -22,6 +24,11 @@ from operator import itemgetter
 Base = declarative_base()
 
 
+class MeasurementSystemCheck(enum.Enum):
+    imperial = "imperial"
+    metric = "metric"
+
+
 class User(Base):
     __tablename__ = "user"
 
@@ -31,6 +38,9 @@ class User(Base):
     username = Column(String(25), nullable=False)
     DOB = Column(DATE, nullable=False)
     last_updated_username = Column(TIMESTAMP)
+    measurement_system = Column(
+        String(10), Enum(MeasurementSystemCheck, create_constraint=True)
+    )
 
 
 class Measurement(Base):
@@ -40,9 +50,7 @@ class Measurement(Base):
     measurement_time = Column(TIMESTAMP, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     height = Column(Float)
-    height_units = Column(String(3))
     body_weight = Column(Float)
-    weight_units = Column(String(3))
 
 
 class Routine(Base):
@@ -112,7 +120,12 @@ class DatabaseInterface:
     ## User Methods
 
     def add_user(
-        self, first_name: str, last_name: str, username: str, DOB: datetime
+        self,
+        first_name: str,
+        last_name: str,
+        username: str,
+        DOB: datetime,
+        measurement_system: str,
     ) -> User:
         user = User(
             first_name=first_name,
@@ -120,6 +133,7 @@ class DatabaseInterface:
             username=username,
             DOB=DOB,
             last_updated_username=datetime.utcnow(),
+            measurement_system=measurement_system,
         )
         session = self.Session()
         session.add(user)
@@ -224,6 +238,30 @@ class DatabaseInterface:
 
         return user
 
+    def change_measurement_system(self, user_id: int, change_values: bool) -> User:
+        session = self.Session()
+        user = self.get_user_by_id(user_id)
+
+        if user.measurement_system == "metric":
+            update_measurement_system = "imperial"
+        elif user.measurement_system == "imperial":
+            update_measurement_system = "metric"
+        else:
+            raise ValueError
+
+        user = (
+            session.query(User)
+            .filter(User.id == user_id)
+            .update({"measurement_system": update_measurement_system})
+        )
+
+        if change_values:
+            self.change_measurement_units(user_id, update_measurement_system)
+
+        session.commit()
+
+        return user
+
     ## Measurement Methods
 
     def add_measurement(
@@ -238,11 +276,14 @@ class DatabaseInterface:
 
         query_dict = {k: v for k, v in kwargs.items()}
         query_dict.update({"user_id": user_id})
-        measurement = self.get_measurement_by_fields(query_dict)
+        measurement = self.get_measurement_by_fields(**query_dict)
         twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
 
-        if measurement.measurement_time > (twenty_four_hours_ago):
-            print("These exact measurements have been entered less than 24 hours ago.")
+        if measurement is not None:
+            if measurement.measurement_time > (twenty_four_hours_ago):
+                print(
+                    "These exact measurements have been entered less than 24 hours ago."
+                )
 
         if measurement is None or measurement.measurement_time > (
             twenty_four_hours_ago
@@ -258,25 +299,8 @@ class DatabaseInterface:
             session.close()
 
             measurement = self.get_measurement_by_id(id)
-            self.update_measurement_units_by_user(user_id)
 
         return measurement
-
-    def update_measurement_units_by_user(self, user_id: int) -> Measurement:
-        measurements = self.get_all_measurement_by_user(1)
-        measurements = sorted(measurements, key=lambda x: x.measurement_time)
-        prev = measurements[0]
-
-        for m in measurements:
-            null_keys = [k for k, v in m.__dict__.items() if v is None and "unit" in v]
-
-            if len(null_keys) != 0:
-                update_measurement = {}
-                for k in null_keys:
-                    update_measurement[k] = prev.__dict__[k]
-                self.edit_measurement(m.id, **update_measurement)
-
-            prev = self.get_measurement_by_id(m.id)
 
     def get_measurement_by_fields(self, **kwargs) -> Measurement:
         session = self.Session()
@@ -294,7 +318,6 @@ class DatabaseInterface:
         return measurement
 
     def get_all_measurement_by_user(self, user_id: int) -> List[Measurement]:
-
         session = self.Session()
         measurements = (
             session.query(Measurement).filter(Measurement.user_id == user_id).all()
@@ -334,6 +357,38 @@ class DatabaseInterface:
         session.close()
 
         return measurement
+
+    def change_measurement_units(self, user_id: int, change_to: str) -> List[Measurement]:
+        measurements = self.get_all_measurement_by_user(user_id)
+        session = self.Session()
+        for m in measurements:
+            update_keys = [
+                k
+                for k, v in m.__dict__.items()
+                if v is not None and "id" not in k and k not in [ "measurement_time" ,"_sa_instance_state" ]
+            ]
+            update_values = { k:v for k,v in m.__dict__.items() if k in update_keys }
+
+            if change_to == "imperial":
+                weight_convert =  2.20462262185
+                length_convert = 0.39370079
+            elif change_to == "metric":
+                weight_convert = 0.45359237
+                length_convert = 2.54
+            else:
+                raise ValueError
+            
+            for k,v in update_values.items():
+                if k == "body_weight":
+                    update_values[k] = v * weight_convert
+                else:
+                    update_values[k] = v * length_convert
+            
+            session.query(Measurement).filter(Measurement.id == m.id).update(update_values)
+
+            session.commit()
+
+        return self.get_all_measurement_by_user(user_id)
 
     def delete_measurement(self, measurement_id: int) -> None:
         session = self.Session()
