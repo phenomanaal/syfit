@@ -275,8 +275,7 @@ class DatabaseInterface:
             measurement_time = datetime.utcnow()
 
         query_dict = {k: v for k, v in kwargs.items()}
-        query_dict.update({"user_id": user_id})
-        measurement = self.get_measurement_by_fields(**query_dict)
+        measurement = self.get_measurement_by_fields(user_id, **query_dict)
         twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
 
         if measurement is not None:
@@ -302,9 +301,9 @@ class DatabaseInterface:
 
         return measurement
 
-    def get_measurement_by_fields(self, **kwargs) -> Measurement:
+    def get_measurement_by_fields(self, user_id: int, **kwargs) -> Measurement:
         session = self.Session()
-        measurement = session.query(Measurement).filter_by(**kwargs).first()
+        measurement = session.query(Measurement).filter(Measurement.id == 1).filter_by(**kwargs).first()
         session.close()
 
         return measurement
@@ -326,15 +325,14 @@ class DatabaseInterface:
         return measurements
 
     def get_all_measurements_by_user_by_date(
-        self, user_id: int, start_time: datetime, end_time: datetime = None
+        self, user_id: int, start_time: datetime, end_time: datetime = datetime.utcnow()
     ):
         session = self.Session()
         measurements = (
             session.query(Measurement)
-            .filter(
-                Measurement.user_id == user_id
-                and Measurement.measurement_time.date() == start_time.date()
-            )
+            .filter(Measurement.user_id == user_id)
+            .filter(Measurement.measurement_time >= start_time)
+            .filter(Measurement.measurement_time <= end_time)
             .all()
         )
         session.close()
@@ -447,7 +445,7 @@ class DatabaseInterface:
     def edit_routine(self, routine_id: int, **kwargs):
         session = self.Session()
         routine_update = {
-            k: v for k, v in kwargs.items() if k in ["routine_name", "num_days"]
+            k: v for k, v in kwargs.items() if k in ["routine_name", "num_days"] and k in Routine.__table__.columns
         }
         session.query(Routine).filter(Routine.id == routine_id).update(routine_update)
         session.commit()
@@ -506,7 +504,11 @@ class DatabaseInterface:
 
     def add_routine_day(self, routine_id: int, routine_day_name: str, day_of_week: str):
         routine_days = self.get_days_by_routine_id(routine_id)
-        day_idx = max([d.day_idx for d in routine_days]) + 1
+        day_idxs = [d.day_idx for d in routine_days]
+        if day_idxs == []:
+            day_idx = 0
+        else:
+            day_idx = max(day_idxs) + 1
         day = RoutineDay(
             routine_id=routine_id,
             day_idx=day_idx,
