@@ -4,6 +4,7 @@ import config
 import subprocess
 import pathlib
 
+
 class DBManager:
     def __init__(
         self,

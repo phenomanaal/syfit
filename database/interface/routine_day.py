@@ -1,5 +1,6 @@
 from database.interface.syfit import DatabaseInterface, RoutineDay
 
+
 class Interface:
     def add_routine_day(self, routine_id: int, routine_day_name: str, day_of_week: str):
         routine_days = self.get_days_by_routine_id(routine_id)

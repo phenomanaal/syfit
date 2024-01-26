@@ -3,8 +3,8 @@ from database.interface import measurement
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
-class Interface(DatabaseInterface):
 
+class Interface(DatabaseInterface):
     def add_user(
         self,
         first_name: str,
@@ -34,6 +34,7 @@ class Interface(DatabaseInterface):
         session.close()
 
         return user
+
     def get_all_users(self):
         session = self.Session()
         users = session.query(User).all()
@@ -141,7 +142,9 @@ class Interface(DatabaseInterface):
         )
 
         if change_values:
-            measurement.Interface().change_measurement_units(user_id, update_measurement_system)
+            measurement.Interface().change_measurement_units(
+                user_id, update_measurement_system
+            )
 
         session.commit()
 

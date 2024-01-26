@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import List
 from database.interface.syfit import DatabaseInterface, Measurement
 
+
 class Interface(DatabaseInterface):
     def add_measurement(
         self, user_id: int, measurement_time: datetime = None, **kwargs
@@ -42,7 +43,12 @@ class Interface(DatabaseInterface):
 
     def get_measurement_by_fields(self, user_id: int, **kwargs) -> Measurement:
         session = self.Session()
-        measurement = session.query(Measurement).filter(Measurement.id == 1).filter_by(**kwargs).first()
+        measurement = (
+            session.query(Measurement)
+            .filter(Measurement.id == 1)
+            .filter_by(**kwargs)
+            .first()
+        )
         session.close()
 
         return measurement
@@ -95,33 +101,38 @@ class Interface(DatabaseInterface):
 
         return measurement
 
-    def change_measurement_units(self, user_id: int, change_to: str) -> List[Measurement]:
+    def change_measurement_units(
+        self, user_id: int, change_to: str
+    ) -> List[Measurement]:
         measurements = self.get_all_measurement_by_user(user_id)
         session = self.Session()
         for m in measurements:
             update_keys = [
                 k
                 for k, v in m.__dict__.items()
-                if v is not None and k not in [ "measurement_time" ,"_sa_instance_state", "id", "user_id" ]
+                if v is not None
+                and k not in ["measurement_time", "_sa_instance_state", "id", "user_id"]
             ]
-            update_values = { k:v for k,v in m.__dict__.items() if k in update_keys }
+            update_values = {k: v for k, v in m.__dict__.items() if k in update_keys}
 
             if change_to == "imperial":
-                weight_convert =  2.20462262185
+                weight_convert = 2.20462262185
                 length_convert = 0.39370079
             elif change_to == "metric":
                 weight_convert = 0.45359237
                 length_convert = 2.54
             else:
                 raise ValueError
-            
-            for k,v in update_values.items():
+
+            for k, v in update_values.items():
                 if k == "body_weight":
                     update_values[k] = v * weight_convert
                 else:
                     update_values[k] = v * length_convert
-            
-            session.query(Measurement).filter(Measurement.id == m.id).update(update_values)
+
+            session.query(Measurement).filter(Measurement.id == m.id).update(
+                update_values
+            )
 
             session.commit()
 

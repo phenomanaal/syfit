@@ -2,6 +2,7 @@ from typing import List
 from database.interface.syfit import DatabaseInterface, Routine
 from database.interface import routine_day
 
+
 class Interface(DatabaseInterface):
     def add_routine(
         self, user_id: int, routine_name: str, num_days: int, is_current: bool = None
@@ -48,7 +49,9 @@ class Interface(DatabaseInterface):
     def edit_routine(self, routine_id: int, **kwargs):
         session = self.Session()
         routine_update = {
-            k: v for k, v in kwargs.items() if k in ["routine_name", "num_days"] and k in Routine.__table__.columns
+            k: v
+            for k, v in kwargs.items()
+            if k in ["routine_name", "num_days"] and k in Routine.__table__.columns
         }
         session.query(Routine).filter(Routine.id == routine_id).update(routine_update)
         session.commit()

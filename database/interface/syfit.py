@@ -107,7 +107,14 @@ class ExerciseLog(Base):
     num_reps = Column(Integer)
     time_duration = Column(Float)
 
-db_url = ''.join([config.config.get('DATABASE', 'CONN_STRING'), config.config.get('DATABASE', 'DB_NAME')])
+
+db_url = "".join(
+    [
+        config.config.get("DATABASE", "CONN_STRING"),
+        config.config.get("DATABASE", "DB_NAME"),
+    ]
+)
+
 
 class DatabaseInterface:
     def __init__(self, connection_string: str = db_url):
@@ -117,21 +124,13 @@ class DatabaseInterface:
     def create_tables(self):
         Base.metadata.create_all(self.engine)
 
-
-
     ## Measurement Methods
 
-
-
     ## Routine Methods
-
-
 
     ## Routine Days Methods
 
 
-
-
 # Example usage:
 if __name__ == "__main__":
-    """ make sure database is empty, but initialized with init.sql when running test script """
+    """make sure database is empty, but initialized with init.sql when running test script"""
