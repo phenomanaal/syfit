@@ -108,16 +108,8 @@ class ExerciseLog(Base):
     time_duration = Column(Float)
 
 
-db_url = "".join(
-    [
-        config.config.get("DATABASE", "CONN_STRING"),
-        config.config.get("DATABASE", "DB_NAME"),
-    ]
-)
-
-
 class DatabaseInterface:
-    def __init__(self, connection_string: str = db_url):
+    def __init__(self, connection_string: str):
         self.engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=self.engine)
 

@@ -28,7 +28,7 @@ class Interface(DatabaseInterface):
             session.commit()
         except IntegrityError as e:
             if "duplicate" in e.args[0].lower():
-                print(f"username '{e.params.get('username')}' already exists.")
+                return f"username '{e.params.get('username')}' already exists."
 
         user = self.get_user_by_username(username)
         session.close()
