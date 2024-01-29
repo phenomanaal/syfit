@@ -142,9 +142,7 @@ class Interface(DatabaseInterface):
         )
 
         if change_values:
-            measurement.Interface().change_measurement_units(
-                user_id, update_measurement_system
-            )
+            measurement.Interface(self.engine.url).change_measurement_units(user_id)
 
         session.commit()
 

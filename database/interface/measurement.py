@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List
 from database.interface.syfit import DatabaseInterface, Measurement
+from database.interface import user
 
 
 class Interface(DatabaseInterface):
@@ -14,19 +15,22 @@ class Interface(DatabaseInterface):
         if measurement_time is None or measurement_time > datetime.utcnow():
             measurement_time = datetime.utcnow()
 
-        query_dict = {k: v for k, v in kwargs.items()}
-        measurement = self.get_measurement_by_fields(user_id, **query_dict)
+        query_dict = {
+            k: v for k, v in kwargs.items() if k in Measurement.__table__.columns
+        }
+        measurements = self.get_measurement_by_measurements(user_id, **query_dict)
         twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
 
-        if measurement is not None:
-            if measurement.measurement_time > (twenty_four_hours_ago):
+        if len(measurements) > 0:
+            latest_time = max([m.measurement_time for m in measurements])
+            if latest_time > (twenty_four_hours_ago):
                 print(
                     "These exact measurements have been entered less than 24 hours ago."
                 )
+        else:
+            latest_time = datetime.utcnow()
 
-        if measurement is None or measurement.measurement_time > (
-            twenty_four_hours_ago
-        ):
+        if len(measurements) == 0 or latest_time < (twenty_four_hours_ago):
             measurement = Measurement(
                 measurement_time=measurement_time, user_id=user_id, **kwargs
             )
@@ -39,15 +43,18 @@ class Interface(DatabaseInterface):
 
             measurement = self.get_measurement_by_id(id)
 
-        return measurement
+            return measurement
 
-    def get_measurement_by_fields(self, user_id: int, **kwargs) -> Measurement:
+        return measurements
+
+    def get_measurement_by_measurements(self, user_id: int, **kwargs) -> Measurement:
         session = self.Session()
+        kwargs = {k: v for k, v in kwargs.items() if k in Measurement.__table__.columns}
         measurement = (
             session.query(Measurement)
-            .filter(Measurement.id == 1)
+            .filter(Measurement.user_id == user_id)
             .filter_by(**kwargs)
-            .first()
+            .all()
         )
         session.close()
 
@@ -77,7 +84,7 @@ class Interface(DatabaseInterface):
             session.query(Measurement)
             .filter(Measurement.user_id == user_id)
             .filter(Measurement.measurement_time >= start_time)
-            .filter(Measurement.measurement_time <= end_time)
+            .filter(Measurement.measurement_time < end_time)
             .all()
         )
         session.close()
@@ -101,9 +108,11 @@ class Interface(DatabaseInterface):
 
         return measurement
 
-    def change_measurement_units(
-        self, user_id: int, change_to: str
-    ) -> List[Measurement]:
+    def change_measurement_units(self, user_id: int) -> List[Measurement]:
+        user_interface = user.Interface(self.engine.url)
+
+        measurement_system = user_interface.get_user_by_id(user_id).measurement_system
+
         measurements = self.get_all_measurement_by_user(user_id)
         session = self.Session()
         for m in measurements:
@@ -115,10 +124,10 @@ class Interface(DatabaseInterface):
             ]
             update_values = {k: v for k, v in m.__dict__.items() if k in update_keys}
 
-            if change_to == "imperial":
+            if measurement_system == "metric":
                 weight_convert = 2.20462262185
                 length_convert = 0.39370079
-            elif change_to == "metric":
+            elif measurement_system == "imperial":
                 weight_convert = 0.45359237
                 length_convert = 2.54
             else:
@@ -145,5 +154,13 @@ class Interface(DatabaseInterface):
         if measurement:
             session.delete(measurement)
             session.commit()
+
+        session.close()
+
+    def delete_all_measurements_by_user(self, user_id: int) -> None:
+        session = self.Session()
+
+        session.query(Measurement).filter(Measurement.user_id == user_id).delete()
+        session.commit()
 
         session.close()
