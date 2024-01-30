@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-from database.manage import db
-from database.interface import user, syfit, measurement
-import config
+from src.database.manage import db
+from src.database.interface import user, syfit, measurement, routine
+import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
 db_name = config.config.get("DATABASE", "TEST_DB")
@@ -13,7 +13,7 @@ mng.create_db()
 test_url = "/".join([conn_string, db_name])
 user_interface = user.Interface(test_url)
 measurement_interface = measurement.Interface(test_url)
-
+routine_interface = routine.Interface(test_url)
 
 class TestUser:
     def test_add_user(self):
@@ -322,3 +322,22 @@ class TestMeasurement:
         )
 
         assert len(measurements) == 0
+
+class TestRoutine:
+    def test_add_routine(self):
+        user_id = 1
+        routine_name = "TEST ROUTINE"
+        num_days = 4
+        routine_interface.add_routine(user_id, routine_name, num_days)
+
+        session = routine_interface.Session()
+        routine = session.query(syfit.Routine).filter(syfit.Routine.user_id == 1).all()
+
+        assert len(routine) == 1
+        
+        routine = routine[0]
+
+        assert routine.user_id == user_id
+        assert routine.routine_name == routine_name
+        assert routine.num_days == num_days
+        assert routine.is_current == True

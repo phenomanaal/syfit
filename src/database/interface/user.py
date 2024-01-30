@@ -1,5 +1,5 @@
-from database.interface.syfit import DatabaseInterface, User
-from database.interface import measurement
+from src.database.interface.syfit import DatabaseInterface, User
+from src.database.interface import measurement
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 

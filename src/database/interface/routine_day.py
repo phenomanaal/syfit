@@ -1,4 +1,4 @@
-from database.interface.syfit import DatabaseInterface, RoutineDay
+from src.database.interface.syfit import DatabaseInterface, RoutineDay
 
 
 class Interface:

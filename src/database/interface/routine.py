@@ -1,6 +1,6 @@
 from typing import List
-from database.interface.syfit import DatabaseInterface, Routine
-from database.interface import routine_day
+from src.database.interface.syfit import DatabaseInterface, Routine
+from src.database.interface import routine_day
 
 
 class Interface(DatabaseInterface):

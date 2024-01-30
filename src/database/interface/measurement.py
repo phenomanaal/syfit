@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List
-from database.interface.syfit import DatabaseInterface, Measurement
-from database.interface import user
+from src.database.interface.syfit import DatabaseInterface, Measurement
+from src.database.interface import user
 
 
 class Interface(DatabaseInterface):

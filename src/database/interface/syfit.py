@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
-import config
+import src.config as config
 from operator import itemgetter
 
 Base = declarative_base()

@@ -3,3 +3,4 @@ db_password.txt
 *.ipynb
 *.local.conf
 __pycache__/
+.pytest_cache/

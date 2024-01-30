@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, text
-import config
+import src.config as config
 
 
 class DBManager:
