@@ -1,4 +1,7 @@
 import configparser
-config = configparser.ConfigParser()
+import pathlib
 
-config.read('src/app.local.conf')
+config_path = pathlib.Path(__file__).parent.absolute() / "app.local.conf"
+print(config_path)
+config = configparser.ConfigParser()
+config.read(config_path)
