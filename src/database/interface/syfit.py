@@ -29,7 +29,7 @@ class MeasurementSystemCheck(enum.Enum):
 
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "app_user"
 
     id = Column(Integer, Sequence("user_id_seq"), primary_key=True)
     first_name = Column(String(25), nullable=False)

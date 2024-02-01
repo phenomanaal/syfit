@@ -22,10 +22,14 @@ class DBManager:
         statements = [";".join([s, ""]) for s in statements if len(s) > 1]
 
         with self.engine.connect() as connection:
+            connection = connection.execution_options(isolation_level="AUTOCOMMIT")
             for s in statements:
                 connection.execute(text(s))
 
     def delete_db(self):
-        with self.engine.connect() as con:
-            query = text(f"drop database if exists {self.db_name};")
-            con.execute(query)
+        with self.engine.connect() as connection:
+            connection.execution_options(isolation_level="AUTOCOMMIT").execute(
+                text(f"DROP DATABASE IF EXISTS {self.db_name};")
+            )
+
+        print(f"Database '{self.db_name}' dropped successfully.")
