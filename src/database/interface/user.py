@@ -1,5 +1,4 @@
 from src.database.interface.syfit import DatabaseInterface, User
-from src.database.interface import measurement
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
@@ -27,8 +26,8 @@ class Interface(DatabaseInterface):
         try:
             session.commit()
         except IntegrityError as e:
-            if "duplicate" in e.args[0].lower():
-                return f"username '{e.params.get('username')}' already exists."
+            session.close()
+            return 'duplicate username'
 
         user = self.get_user_by_username(username)
         session.close()
@@ -55,7 +54,7 @@ class Interface(DatabaseInterface):
 
     def delete_user(self, user_id: int) -> None:
         session = self.Session()
-        user = session.query(User).filter(User.id == user_id).first()
+        user = self.get_user_by_id(user_id)
         if user:
             session.delete(user)
             session.commit()
@@ -121,29 +120,5 @@ class Interface(DatabaseInterface):
             }
 
         session.close()
-
-        return user
-
-    def change_measurement_system(self, user_id: int, change_values: bool) -> User:
-        session = self.Session()
-        user = self.get_user_by_id(user_id)
-
-        if user.measurement_system == "metric":
-            update_measurement_system = "imperial"
-        elif user.measurement_system == "imperial":
-            update_measurement_system = "metric"
-        else:
-            raise ValueError
-
-        user = (
-            session.query(User)
-            .filter(User.id == user_id)
-            .update({"measurement_system": update_measurement_system})
-        )
-
-        if change_values:
-            measurement.Interface(self.engine.url).change_measurement_units(user_id)
-
-        session.commit()
 
         return user

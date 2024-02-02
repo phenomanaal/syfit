@@ -1,5 +1,6 @@
 from typing import List
 import enum
+import os
 from sqlalchemy import (
     create_engine,
     text,
@@ -31,10 +32,10 @@ class MeasurementSystemCheck(enum.Enum):
 class User(Base):
     __tablename__ = "app_user"
 
-    id = Column(Integer, Sequence("user_id_seq"), primary_key=True)
+    id = Column(Integer, Sequence("app_user_id_seq"), primary_key=True)
     first_name = Column(String(25), nullable=False)
     last_name = Column(String(25), nullable=False)
-    username = Column(String(25), nullable=False)
+    username = Column(String(25), nullable=False, unique=True)
     DOB = Column(DATE, nullable=False)
     last_updated_username = Column(TIMESTAMP)
     measurement_system = Column(
@@ -47,7 +48,7 @@ class Measurement(Base):
 
     id = Column(Integer, Sequence("measurement_id_seq"), primary_key=True)
     measurement_time = Column(TIMESTAMP, nullable=False)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("app_user.id"), nullable=False)
     height = Column(Float)
     body_weight = Column(Float)
 
@@ -57,7 +58,7 @@ class Routine(Base):
 
     id = Column(Integer, Sequence("routine_id_seq"), primary_key=True)
     routine_name = Column(String(20), nullable=False)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("app_user.id"))
     num_days = Column(Integer)
     is_current = Column(Boolean)
 
@@ -84,7 +85,7 @@ class Exercise(Base):
 
 
 class RoutineExercise(Base):
-    __tablename__ = "routine_exerise"
+    __tablename__ = "routine_exercise"
 
     id = Column(Integer, Sequence("routine_exercise_id_seq"), primary_key=True)
     day_id = Column(Integer, ForeignKey("routine_day.id"), nullable=False)
@@ -100,7 +101,7 @@ class ExerciseLog(Base):
 
     id = Column(Integer, Sequence("exercise_log_id_seq"), primary_key=True)
     routine_exercise_id = Column(
-        Integer, ForeignKey("routine_exericse.id"), nullable=False
+        Integer, ForeignKey("routine_exercise.id"), nullable=False
     )
     time_stamp = Column(TIMESTAMP, nullable=False)
     set_num = Column(Integer)
@@ -109,18 +110,21 @@ class ExerciseLog(Base):
 
 
 class DatabaseInterface:
-    def __init__(self, connection_string: str):
+    def __init__(self, connection_string: str, restart_db: bool=False):
         self.engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=self.engine)
+        if restart_db:
+            self.restart_db()
 
     def create_tables(self):
         Base.metadata.create_all(self.engine)
 
-    ## Measurement Methods
-
-    ## Routine Methods
-
-    ## Routine Days Methods
+    def delete_db(self):
+        os.remove(self.engine.url.database)
+    
+    def restart_db(self):
+        self.delete_db()
+        self.create_tables()
 
 
 # Example usage:

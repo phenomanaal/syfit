@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from typing import List
-from src.database.interface.syfit import DatabaseInterface, Measurement
+from sqlalchemy.orm.session import Session
+from src.database.interface.syfit import Measurement, User
 from src.database.interface import user
 
 
-class Interface(DatabaseInterface):
+class Interface(user.Interface):
     def add_measurement(
         self, user_id: int, measurement_time: datetime = None, **kwargs
     ) -> Measurement:
@@ -108,13 +109,12 @@ class Interface(DatabaseInterface):
 
         return measurement
 
-    def change_measurement_units(self, user_id: int) -> List[Measurement]:
-        user_interface = user.Interface(self.engine.url)
+    def change_measurement_units(self, user_id: int, session: Session) -> List[Measurement]:
 
-        measurement_system = user_interface.get_user_by_id(user_id).measurement_system
+        measurement_system = self.get_user_by_id(user_id).measurement_system
 
         measurements = self.get_all_measurement_by_user(user_id)
-        session = self.Session()
+
         for m in measurements:
             update_keys = [
                 k
@@ -142,10 +142,31 @@ class Interface(DatabaseInterface):
             session.query(Measurement).filter(Measurement.id == m.id).update(
                 update_values
             )
+    
+    def change_measurement_system(self, user_id: int, change_values: bool) -> User:
+        session = self.Session()
+        user = self.get_user_by_id(user_id)
 
-            session.commit()
+        if user.measurement_system == "metric":
+            update_measurement_system = "imperial"
+        elif user.measurement_system == "imperial":
+            update_measurement_system = "metric"
+        else:
+            raise ValueError
 
-        return self.get_all_measurement_by_user(user_id)
+        user = (
+            session.query(User)
+            .filter(User.id == user_id)
+            .update({"measurement_system": update_measurement_system})
+        )
+
+        if change_values:
+            self.change_measurement_units(user_id, session)
+
+        session.commit()
+        session.close()
+
+        return user
 
     def delete_measurement(self, measurement_id: int) -> None:
         session = self.Session()

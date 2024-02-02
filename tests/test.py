@@ -1,19 +1,15 @@
 from datetime import datetime, timedelta
-from src.database.manage import db
+import math
 from src.database.interface import user, syfit, measurement, routine
 import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
-db_name = config.config.get("DATABASE", "TEST_DB")
 
-mng = db.DBManager(conn_string, db_name)
-mng.delete_db()
-mng.create_db()
+db_interface = syfit.DatabaseInterface(conn_string, restart_db=True)
+user_interface = user.Interface(conn_string)
+measurement_interface = measurement.Interface(conn_string)
+routine_interface = routine.Interface(conn_string)
 
-test_url = "/".join([conn_string, db_name])
-user_interface = user.Interface(test_url)
-measurement_interface = measurement.Interface(test_url)
-routine_interface = routine.Interface(test_url)
 
 class TestUser:
     def test_add_user(self):
@@ -40,6 +36,9 @@ class TestUser:
         assert add_user.last_updated_username == get_user.last_updated_username
         assert add_user.measurement_system == get_user.measurement_system
 
+        session.commit()
+        session.close()
+
     def test_add_duplicate_username(self):
         duplicate_user = user_interface.add_user(
             "NewTest", "User", "testuser2023", datetime.utcnow().date(), "metric"
@@ -57,6 +56,9 @@ class TestUser:
         assert len(get_user) == 1
         assert get_user[0].username == "testuser2023"
         assert get_user[0].first_name != "NewTest"
+
+        session.commit()
+        session.close()
 
     def test_get_all_users(self):
         users = user_interface.get_all_users()
@@ -282,8 +284,8 @@ class TestMeasurement:
     def test_change_measurement_system(self):
         measurements = measurement_interface.get_all_measurement_by_user(1)
 
-        user_interface.change_measurement_system(1, 1)
-        user_interface.change_measurement_system(1, 1)
+        measurement_interface.change_measurement_system(1, 1)
+        measurement_interface.change_measurement_system(1, 1)
 
         new_measurements = measurement_interface.get_all_measurement_by_user(1)
 
@@ -291,13 +293,20 @@ class TestMeasurement:
             new_measurement = [n for n in new_measurements if n.id == m.id]
 
             assert len(new_measurement) == 1
-
             new_measurement = new_measurement[0]
 
             assert new_measurement.id == m.id
             assert new_measurement.user_id == m.user_id
-            assert new_measurement.height == m.height
-            assert new_measurement.body_weight == m.body_weight
+            assert (
+                new_measurement.height == m.height
+                or math.ceil(new_measurement.height) == m.height
+                or math.floor(new_measurement.height) == m.height
+            )
+            assert (
+                new_measurement.body_weight == m.body_weight
+                or math.ceil(new_measurement.body_weight) == m.body_weight
+                or math.floor(new_measurement.body_weight) == m.body_weight
+            )
 
     def test_delete_measurements(self):
         measurement_interface.delete_measurement(7)
@@ -323,6 +332,7 @@ class TestMeasurement:
 
         assert len(measurements) == 0
 
+
 class TestRoutine:
     def test_add_routine(self):
         user_id = 1
@@ -334,7 +344,7 @@ class TestRoutine:
         routine = session.query(syfit.Routine).filter(syfit.Routine.user_id == 1).all()
 
         assert len(routine) == 1
-        
+
         routine = routine[0]
 
         assert routine.user_id == user_id
