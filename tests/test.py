@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import math
-from src.database.interface import user, syfit, measurement, routine
+from src.database import user, syfit, measurement, routine, routine_day
 import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
@@ -9,6 +9,7 @@ db_interface = syfit.DatabaseInterface(conn_string, restart_db=True)
 user_interface = user.Interface(conn_string)
 measurement_interface = measurement.Interface(conn_string)
 routine_interface = routine.Interface(conn_string)
+routine_day_interface = routine_day.Interface(conn_string)
 
 
 class TestUser:
@@ -351,3 +352,137 @@ class TestRoutine:
         assert routine.routine_name == routine_name
         assert routine.num_days == num_days
         assert routine.is_current == True
+
+    def test_get_all_user_routines(self):
+        routine = routine_interface.get_all_user_routines(1)
+
+        assert len(routine) == 1
+        routine = routine[0]
+
+        assert isinstance(routine, syfit.Routine)
+        assert routine.user_id == 1
+        assert routine.routine_name == "TEST ROUTINE"
+        assert routine.num_days == 4
+
+    def test_get_routine_by_id(self):
+        routine = routine_interface.get_routine_by_id(1)
+
+        assert isinstance(routine, syfit.Routine)
+        assert routine.user_id == 1
+        assert routine.routine_name == "TEST ROUTINE"
+        assert routine.num_days == 4
+
+    def test_edit_routine(self):
+        routine_interface.edit_routine(
+            1, routine_name="CHANGED ROUTINE NAME", num_days=5
+        )
+
+        routine = routine_interface.get_routine_by_id(1)
+
+        assert routine.user_id == 1
+        assert routine.routine_name == "CHANGED ROUTINE NAME"
+        assert routine.num_days == 5
+
+    def test_make_routine_not_current(self):
+        assert routine_interface.get_routine_by_id(1).is_current == True
+
+        routine_interface.make_routine_not_current(1)
+
+        routine = routine_interface.get_routine_by_id(1)
+
+        assert routine.is_current == False
+
+    def test_make_routine_current(self):
+        routine_interface.add_routine(1, "NEW ROUTINE", 3)
+
+        routine_interface.make_routine_current(1)
+
+        routine = routine_interface.get_routine_by_id(1)
+        new_routine = routine_interface.get_routine_by_id(2)
+
+        assert routine.is_current == True
+        assert new_routine.is_current == False
+
+    def test_delete_routine(self):
+        routine_interface.delete_routine(2)
+
+        session = routine_interface.Session()
+
+        routine = session.query(syfit.Routine).filter(syfit.Routine.id == 2).all()
+
+        assert len(routine) == 0
+
+
+class TestRoutineDay:
+    def test_add_routine_day(self):
+        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "MON")
+        routine_day_interface.add_routine_day(1, "CHEST & ABS", "TUE")
+        routine_day_interface.add_routine_day(1, "BACK & ARMS", "WED")
+        routine_day_interface.add_routine_day(1, "CARDIO", "THU")
+        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "FRI")
+
+        session = routine_day_interface.Session()
+
+        days = (
+            session.query(syfit.RoutineDay)
+            .filter(syfit.RoutineDay.routine_id == 1)
+            .all()
+        )
+
+        assert len(days) == 5
+
+        test_legs = [d for d in days if d.routine_day_name == "LEGS & GLUTES"]
+        assert len(test_legs) == 2
+
+        test_cardio = [d for d in days if d.routine_day_name == "CARDIO"]
+        assert len(test_cardio) == 1
+
+        test_chest = [d for d in days if d.routine_day_name == "CHEST & ABS"]
+        assert len(test_chest) == 1
+
+        test_back = [d for d in days if d.routine_day_name == "BACK & ARMS"]
+        assert len(test_back) == 1
+
+    def test_get_all_days_by_routine_id(self):
+        days = routine_day_interface.get_days_by_routine_id(1)
+
+        assert len(days) == 5
+
+        test_legs = [d for d in days if d.routine_day_name == "LEGS & GLUTES"]
+        assert len(test_legs) == 2
+
+        test_cardio = [d for d in days if d.routine_day_name == "CARDIO"]
+        assert len(test_cardio) == 1
+
+        test_chest = [d for d in days if d.routine_day_name == "CHEST & ABS"]
+        assert len(test_chest) == 1
+
+        test_back = [d for d in days if d.routine_day_name == "BACK & ARMS"]
+        assert len(test_back) == 1
+
+    def test_delete_day_by_id(self):
+        routine_day_interface.delete_day_by_id(4)
+
+        days = routine_day_interface.get_days_by_routine_id(1)
+
+        assert len(days) == 4
+
+        for n, d in enumerate(days):
+            assert n == d.day_idx
+
+    def test_delete_days_by_routine_id(self):
+        routine_day_interface.delete_days_by_routine_id(1)
+
+        session = routine_day_interface.Session()
+
+        days = (
+            session.query(syfit.RoutineDay)
+            .filter(syfit.RoutineDay.routine_id == 1)
+            .all()
+        )
+
+        assert len(days) == 0
+
+        routine = session.query(syfit.Routine).filter(syfit.Routine.id == 1).all()
+
+        assert len(routine) == 0

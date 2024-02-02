@@ -110,7 +110,7 @@ class ExerciseLog(Base):
 
 
 class DatabaseInterface:
-    def __init__(self, connection_string: str, restart_db: bool=False):
+    def __init__(self, connection_string: str, restart_db: bool = False):
         self.engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=self.engine)
         if restart_db:
@@ -121,7 +121,7 @@ class DatabaseInterface:
 
     def delete_db(self):
         os.remove(self.engine.url.database)
-    
+
     def restart_db(self):
         self.delete_db()
         self.create_tables()

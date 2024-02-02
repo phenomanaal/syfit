@@ -1,7 +1,8 @@
-from src.database.interface.syfit import DatabaseInterface, RoutineDay
+from src.database import routine
+from src.database.syfit import RoutineDay
 
 
-class Interface:
+class Interface(routine.Interface):
     def add_routine_day(self, routine_id: int, routine_day_name: str, day_of_week: str):
         routine_days = self.get_days_by_routine_id(routine_id)
         day_idxs = [d.day_idx for d in routine_days]
@@ -50,11 +51,13 @@ class Interface:
         if day:
             routine_id = day.routine_id
             session.delete(day)
-            self.reset_day_idxs(routine_id)
             session.commit()
+            self.reset_day_idxs(routine_id)
         session.close()
 
     def delete_days_by_routine_id(self, routine_id: int) -> None:
+        self.delete_routine(routine_id)
+
         session = self.Session()
         session.query(RoutineDay).filter(RoutineDay.routine_id == routine_id).delete()
         session.commit()

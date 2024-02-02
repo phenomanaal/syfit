@@ -1,6 +1,5 @@
 from typing import List
-from src.database.interface.syfit import DatabaseInterface, Routine
-from src.database.interface import routine_day
+from src.database.syfit import DatabaseInterface, Routine
 
 
 class Interface(DatabaseInterface):
@@ -101,7 +100,5 @@ class Interface(DatabaseInterface):
         if routine:
             session.delete(routine)
             session.commit()
-
-            routine_day.Interface().delete_days_by_routine_id(routine_id)
 
         session.close()

@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from typing import List
 from sqlalchemy.orm.session import Session
-from src.database.interface.syfit import Measurement, User
-from src.database.interface import user
+from src.database.syfit import Measurement, User
+from src.database import user
 
 
 class Interface(user.Interface):
@@ -109,8 +109,9 @@ class Interface(user.Interface):
 
         return measurement
 
-    def change_measurement_units(self, user_id: int, session: Session) -> List[Measurement]:
-
+    def change_measurement_units(
+        self, user_id: int, session: Session
+    ) -> List[Measurement]:
         measurement_system = self.get_user_by_id(user_id).measurement_system
 
         measurements = self.get_all_measurement_by_user(user_id)
@@ -142,7 +143,7 @@ class Interface(user.Interface):
             session.query(Measurement).filter(Measurement.id == m.id).update(
                 update_values
             )
-    
+
     def change_measurement_system(self, user_id: int, change_values: bool) -> User:
         session = self.Session()
         user = self.get_user_by_id(user_id)

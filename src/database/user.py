@@ -1,4 +1,4 @@
-from src.database.interface.syfit import DatabaseInterface, User
+from src.database.syfit import DatabaseInterface, User
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
@@ -27,7 +27,7 @@ class Interface(DatabaseInterface):
             session.commit()
         except IntegrityError as e:
             session.close()
-            return 'duplicate username'
+            return "duplicate username"
 
         user = self.get_user_by_username(username)
         session.close()
