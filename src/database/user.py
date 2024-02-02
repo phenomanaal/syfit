@@ -27,7 +27,8 @@ class Interface(DatabaseInterface):
             session.commit()
         except IntegrityError as e:
             session.close()
-            return "duplicate username"
+            if 'UNIQUE constraint failed' in e.args[0]:
+                return "duplicate username"
 
         user = self.get_user_by_username(username)
         session.close()

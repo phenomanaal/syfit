@@ -415,11 +415,11 @@ class TestRoutine:
 
 class TestRoutineDay:
     def test_add_routine_day(self):
-        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "MON")
-        routine_day_interface.add_routine_day(1, "CHEST & ABS", "TUE")
-        routine_day_interface.add_routine_day(1, "BACK & ARMS", "WED")
-        routine_day_interface.add_routine_day(1, "CARDIO", "THU")
-        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "FRI")
+        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "mon")
+        routine_day_interface.add_routine_day(1, "CHEST & ABS", "tue")
+        routine_day_interface.add_routine_day(1, "BACK & ARMS", "wed")
+        routine_day_interface.add_routine_day(1, "CARDIO", "thu")
+        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "fri")
 
         session = routine_day_interface.Session()
 

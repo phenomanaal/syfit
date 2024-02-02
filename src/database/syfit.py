@@ -29,6 +29,36 @@ class MeasurementSystemCheck(enum.Enum):
     metric = "metric"
 
 
+class DayOfWeekCheck(enum.Enum):
+    mon = "mon"
+    tue = "tue"
+    wed = "wed"
+    thu = "thu"
+    fri = "fri"
+    sat = "sat"
+    sun = "sun"
+
+
+class BodyPartCheck(enum.Enum):
+    triceps = "triceps"
+    chest = "chest"
+    shoulders = "shoulders"
+    biceps = "biceps"
+    core = "core"
+    back = "back"
+    forearms = "forearms"
+    upper_legs = "upper_legs"
+    glutes = "glutes"
+    cardio = "cardio"
+    lower_legs = "lower_legs"
+    other = "other"
+
+
+class RepTypeCheck(enum.Enum):
+    reps = "reps"
+    time = "time"
+
+
 class User(Base):
     __tablename__ = "app_user"
 
@@ -70,18 +100,20 @@ class RoutineDay(Base):
     routine_id = Column(Integer, ForeignKey("routine.id"), nullable=False)
     day_idx = Column(Integer)
     routine_day_name = Column(String(10))
-    day_of_week = Column(String(3))
+    day_of_week = Column(String(3), Enum(DayOfWeekCheck, create_constraint=True))
 
 
 class Exercise(Base):
     __tablename__ = "exercise"
 
     id = Column(Integer, Sequence("exercise_id_seq"), primary_key=True)
-    exercise_name = Column(String(100), nullable=False)
+    exercise_name = Column(String(100), nullable=False, unique=True)
     reference_link = Column(String(255))
-    body_part = Column(String(50))
-    secondary_body_part = Column(String(50))
-    rep_type = Column(String(4))
+    body_part = Column(String(50), Enum(BodyPartCheck, create_constraint=True))
+    secondary_body_part = Column(
+        String(50), Enum(BodyPartCheck, create_constraint=True)
+    )
+    rep_type = Column(String(4), Enum(RepTypeCheck, create_constraint=True))
 
 
 class RoutineExercise(Base):
@@ -100,6 +132,7 @@ class ExerciseLog(Base):
     __tablename__ = "exercise_log"
 
     id = Column(Integer, Sequence("exercise_log_id_seq"), primary_key=True)
+    exercise_id = Column(Integer, ForeignKey("exercise.id"), nullable=False)
     routine_exercise_id = Column(
         Integer, ForeignKey("routine_exercise.id"), nullable=False
     )
