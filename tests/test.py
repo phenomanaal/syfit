@@ -633,7 +633,3 @@ class TestExercise:
         exercise = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == "delete me").first()
 
         assert exercise is None
-
-
-
-        

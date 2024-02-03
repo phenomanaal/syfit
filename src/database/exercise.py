@@ -12,6 +12,7 @@ class Interface(DatabaseInterface):
         body_part: str,
         secondary_body_part: str,
         rep_type: str,
+        user_id: int=None
     ):
         exercise_name = exercise_name.lower()
         exercise = Exercise(
@@ -20,6 +21,7 @@ class Interface(DatabaseInterface):
             body_part=body_part,
             secondary_body_part=secondary_body_part,
             rep_type=rep_type,
+            user_id=user_id
         )
 
         session = self.Session()
@@ -67,6 +69,12 @@ class Interface(DatabaseInterface):
         exercise = session.query(Exercise).filter(Exercise.exercise_name.contains(search_string)).all()
         session.close()
         return exercise
+    
+    def get_user_created_exercises(self, user_id):
+        session = self.Session()
+        exercises = session.query(Exercise).filter(Exercise.user_id == user_id).all()
+        session.close()
+        return exercises
     
     def edit_exercise(self, exercise_id: int, **kwargs):
         session = self.Session()

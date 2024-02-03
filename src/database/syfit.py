@@ -1,5 +1,3 @@
-from typing import List
-import enum
 import os
 from sqlalchemy import (
     create_engine,
@@ -16,47 +14,9 @@ from sqlalchemy import (
     Enum,
 )
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta
-import src.config as config
-from operator import itemgetter
+import src.database.constraints as constraints
 
 Base = declarative_base()
-
-
-class MeasurementSystemCheck(enum.Enum):
-    imperial = "imperial"
-    metric = "metric"
-
-
-class DayOfWeekCheck(enum.Enum):
-    mon = "mon"
-    tue = "tue"
-    wed = "wed"
-    thu = "thu"
-    fri = "fri"
-    sat = "sat"
-    sun = "sun"
-
-
-class BodyPartCheck(enum.Enum):
-    triceps = "triceps"
-    chest = "chest"
-    shoulders = "shoulders"
-    biceps = "biceps"
-    core = "core"
-    back = "back"
-    forearms = "forearms"
-    upper_legs = "upper_legs"
-    glutes = "glutes"
-    cardio = "cardio"
-    lower_legs = "lower_legs"
-    other = "other"
-
-
-class RepTypeCheck(enum.Enum):
-    reps = "reps"
-    time = "time"
 
 
 class User(Base):
@@ -69,7 +29,7 @@ class User(Base):
     DOB = Column(DATE, nullable=False)
     last_updated_username = Column(TIMESTAMP)
     measurement_system = Column(
-        String(10), Enum(MeasurementSystemCheck, create_constraint=True)
+        String(10), Enum(constraints.MeasurementSystemCheck, create_constraint=True)
     )
 
 
@@ -100,7 +60,9 @@ class RoutineDay(Base):
     routine_id = Column(Integer, ForeignKey("routine.id"), nullable=False)
     day_idx = Column(Integer)
     routine_day_name = Column(String(10))
-    day_of_week = Column(String(3), Enum(DayOfWeekCheck, create_constraint=True))
+    day_of_week = Column(
+        String(3), Enum(constraints.DayOfWeekCheck, create_constraint=True)
+    )
 
 
 class Exercise(Base):
@@ -109,11 +71,13 @@ class Exercise(Base):
     id = Column(Integer, Sequence("exercise_id_seq"), primary_key=True)
     exercise_name = Column(String(100), nullable=False, unique=True)
     reference_link = Column(String(255))
-    body_part = Column(String(50), Enum(BodyPartCheck, create_constraint=True))
-    secondary_body_part = Column(
-        String(50), Enum(BodyPartCheck, create_constraint=True)
+    body_part = Column(
+        String(50), Enum(constraints.BodyPartCheck, create_constraint=True)
     )
-    rep_type = Column(String(4), Enum(RepTypeCheck, create_constraint=True))
+    secondary_body_part = Column(
+        String(50), Enum(constraints.BodyPartCheck, create_constraint=True)
+    )
+    rep_type = Column(String(4), Enum(constraints.RepTypeCheck, create_constraint=True))
     user_id = Column(Integer, ForeignKey("app_user.id"))
 
 
