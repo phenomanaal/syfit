@@ -114,6 +114,7 @@ class Exercise(Base):
         String(50), Enum(BodyPartCheck, create_constraint=True)
     )
     rep_type = Column(String(4), Enum(RepTypeCheck, create_constraint=True))
+    user_id = Column(Integer, ForeignKey("app_user.id"))
 
 
 class RoutineExercise(Base):

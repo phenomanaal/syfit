@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import math
-from src.database import user, syfit, measurement, routine, routine_day
+from src.database import user, syfit, measurement, routine, routine_day, exercise
 import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
@@ -10,6 +10,7 @@ user_interface = user.Interface(conn_string)
 measurement_interface = measurement.Interface(conn_string)
 routine_interface = routine.Interface(conn_string)
 routine_day_interface = routine_day.Interface(conn_string)
+exercise_interface = exercise.Interface(conn_string)
 
 
 class TestUser:
@@ -486,3 +487,153 @@ class TestRoutineDay:
         routine = session.query(syfit.Routine).filter(syfit.Routine.id == 1).all()
 
         assert len(routine) == 0
+
+
+class TestExercise:
+    def test_add_exercise(self):
+        exercise_name = "bodyweight squat"
+        reference_link = "www.test.com"
+        body_part = "upper_legs"
+        secondary_body_part = "lower_legs"
+        rep_type = "reps"
+
+        exercise_interface.add_exercise(
+            exercise_name, reference_link, body_part, secondary_body_part, rep_type
+        )
+
+        session = exercise_interface.Session()
+        exercises = session.query(syfit.Exercise).all()
+
+        assert len(exercises) == 1
+        query_exercise = exercises[0]
+
+        assert exercise_name == query_exercise.exercise_name
+        assert reference_link == query_exercise.reference_link
+        assert body_part == query_exercise.body_part
+        assert secondary_body_part == query_exercise.secondary_body_part
+        assert rep_type == query_exercise.rep_type
+
+    def test_add_duplicate_exercise(self):
+        exercise_name = "bodyweight squat"
+        reference_link = "www.test.com"
+        body_part = "upper_legs"
+        secondary_body_part = "lower_legs"
+        rep_type = "reps"
+
+        duplicate_exercise = exercise_interface.add_exercise(
+            exercise_name, reference_link, body_part, secondary_body_part, rep_type
+        )
+
+        session = exercise_interface.Session()
+        exercises = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == exercise_name).all()
+
+        assert len(exercises) == 1
+        assert isinstance(duplicate_exercise, str)
+
+    def test_get_exercise_by_id(self):
+        exercise = exercise_interface.get_exercise_by_id(1)
+        session = exercise_interface.Session()
+        query_exercise = session.query(syfit.Exercise).filter(syfit.Exercise.id == 1).first()
+
+        assert exercise.id == query_exercise.id
+        assert exercise.exercise_name == query_exercise.exercise_name
+        assert exercise.reference_link == query_exercise.reference_link
+        assert exercise.body_part == query_exercise.body_part
+        assert exercise.secondary_body_part == query_exercise.secondary_body_part
+        assert exercise.rep_type == query_exercise.rep_type
+
+    def test_get_exercise_by_name(self):
+        exercise = exercise_interface.get_exercise_by_name("bodyweight squat")
+        session = exercise_interface.Session()
+        query_exercise = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == "bodyweight squat").first()
+
+        assert exercise.id == query_exercise.id
+        assert exercise.exercise_name == query_exercise.exercise_name
+        assert exercise.reference_link == query_exercise.reference_link
+        assert exercise.body_part == query_exercise.body_part
+        assert exercise.secondary_body_part == query_exercise.secondary_body_part
+        assert exercise.rep_type == query_exercise.rep_type
+
+    def test_get_exercises_by_body_part(self):
+        body_part = "upper_legs"
+        secondary_body_part = "lower_legs"
+        ref_link = "test.com"
+        exercise_interface.add_exercise("barbell squat", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("bulgarian split squat", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("box squat", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("bodyweight lunge", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("leg press", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("sumo squat", ref_link, body_part, secondary_body_part, "reps")
+
+        body_part = "chest"
+        secondary_body_part = "shoulders"
+        exercise_interface.add_exercise("barbell bench press", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("incline bench press", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise("dumbbell bench press", ref_link, body_part, secondary_body_part, "reps")
+
+        body_part = "shoulders"
+        secondary_body_part = "biceps"
+        exercise_interface.add_exercise("dumbbell arnold press", ref_link, body_part, secondary_body_part, "reps")
+        secondary_body_part = "forearms"
+        exercise_interface.add_exercise("dumbbell lateral raise", ref_link, body_part, secondary_body_part, "reps")
+
+        leg_exercises = exercise_interface.get_exercises_by_body_part("upper_legs")
+        chest_exercises = exercise_interface.get_exercises_by_body_part("chest")
+        shoulder_exercises = exercise_interface.get_exercises_by_body_part("shoulders")
+        bicep_exercises = exercise_interface.get_exercises_by_body_part("biceps")
+        forearm_exercises = exercise_interface.get_exercises_by_body_part("forearms")
+
+        assert len(leg_exercises) == 7
+        assert len(chest_exercises) == 3
+        assert len(shoulder_exercises) == 5
+        assert len(bicep_exercises) == 1
+        assert len(forearm_exercises) == 1
+
+    def test_get_exercises_match_string(self):
+        squats = exercise_interface.get_exercises_match_string("squat")
+        press = exercise_interface.get_exercises_match_string("press")
+        dumbbell = exercise_interface.get_exercises_match_string("dumbbell")
+
+        assert len(squats) == 5
+        assert len(press) == 5
+        assert len(dumbbell) == 3
+
+    def test_edit_exercise(self):
+        name = "edit me"
+        ref_link = "delete.com"
+        body_part = "forearms"
+        secondary_body_part = None
+        rep_type = "reps"
+
+        old_exercise = exercise_interface.add_exercise(name, ref_link, body_part, secondary_body_part, rep_type)
+
+        new_name = "delete me"
+        exercise_interface.edit_exercise(old_exercise.id, exercise_name = new_name)
+
+        exercise = exercise_interface.get_exercise_by_name(new_name)
+
+        assert exercise_interface.get_exercise_by_name(name) is None
+        assert exercise is not None
+        assert exercise.id == old_exercise.id
+        assert exercise.reference_link == ref_link
+        assert exercise.body_part == body_part
+        assert exercise.secondary_body_part == secondary_body_part
+        assert exercise.rep_type == rep_type
+
+    def test_delete_exercise(self):
+        exercise_id = exercise_interface.get_exercise_by_name("delete me").id
+
+        exercise_interface.delete_exercise(exercise_id)
+
+        session = exercise_interface.Session()
+        exercise = session.query(syfit.Exercise).filter(syfit.Exercise.id == exercise_id).first()
+
+        assert exercise is None
+
+        exercise = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == "delete me").first()
+
+        assert exercise is None
+
+
+
+        

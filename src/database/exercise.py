@@ -1,5 +1,6 @@
 from src.database.syfit import DatabaseInterface, Exercise
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 
 
 class Interface(DatabaseInterface):
@@ -12,6 +13,7 @@ class Interface(DatabaseInterface):
         secondary_body_part: str,
         rep_type: str,
     ):
+        exercise_name = exercise_name.lower()
         exercise = Exercise(
             exercise_name=exercise_name,
             reference_link=reference_link,
@@ -31,6 +33,8 @@ class Interface(DatabaseInterface):
                 return "exercise name already in the database"
 
         session.close()
+
+        return self.get_exercise_by_name(exercise_name)
 
     def get_exercise_by_id(self, exercise_id: str):
         session = self.Session()
@@ -52,8 +56,7 @@ class Interface(DatabaseInterface):
         session = self.Session()
         exercises = (
             session.query(Exercise)
-            .filter(Exercise.body_part == body_part)
-            .filter(Exercise.secondary_body_part == body_part)
+            .filter(or_(Exercise.body_part == body_part, Exercise.secondary_body_part == body_part))
             .all()
         )
         session.close()
@@ -64,3 +67,31 @@ class Interface(DatabaseInterface):
         exercise = session.query(Exercise).filter(Exercise.exercise_name.contains(search_string)).all()
         session.close()
         return exercise
+    
+    def edit_exercise(self, exercise_id: int, **kwargs):
+        session = self.Session()
+        exercise_update = {
+            k: v
+            for k, v in kwargs.items()
+            if k in Exercise.__table__.columns and k != "id"
+        }
+        session.query(Exercise).filter(Exercise.id == exercise_id).update(
+            exercise_update
+        )
+        session.commit()
+
+        exercise = self.get_exercise_by_id(exercise_id)
+
+        session.close()
+
+        return exercise
+    
+    def delete_exercise(self, exercise_id: int) -> None:
+        session = self.Session()
+        exercise = self.get_exercise_by_id(exercise_id)
+
+        if exercise:
+            session.delete(exercise)
+            session.commit()
+
+        session.close()
