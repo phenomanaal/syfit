@@ -633,3 +633,15 @@ class TestExercise:
         exercise = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == "delete me").first()
 
         assert exercise is None
+
+    def test_get_user_created_exercise(self):
+        name = "user created exercise"
+        ref_link = "used.com"
+        body_part = "core"
+        secondary_body_part = "back"
+        exercise_interface.add_exercise(name, ref_link, body_part, secondary_body_part, "reps", 1)
+
+        exercises = exercise_interface.get_user_created_exercises(1)
+
+        assert len(exercises) == 1
+

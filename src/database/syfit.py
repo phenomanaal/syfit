@@ -18,7 +18,6 @@ import src.database.constraints as constraints
 
 Base = declarative_base()
 
-
 class User(Base):
     __tablename__ = "app_user"
 
@@ -51,6 +50,7 @@ class Routine(Base):
     user_id = Column(Integer, ForeignKey("app_user.id"))
     num_days = Column(Integer)
     is_current = Column(Boolean)
+    is_public = Column(Boolean)
 
 
 class RoutineDay(Base):
@@ -60,9 +60,7 @@ class RoutineDay(Base):
     routine_id = Column(Integer, ForeignKey("routine.id"), nullable=False)
     day_idx = Column(Integer)
     routine_day_name = Column(String(10))
-    day_of_week = Column(
-        String(3), Enum(constraints.DayOfWeekCheck, create_constraint=True)
-    )
+    day_of_week = Column(String(3), Enum(constraints.DayOfWeekCheck, create_constraint=True))
 
 
 class Exercise(Base):
@@ -71,15 +69,21 @@ class Exercise(Base):
     id = Column(Integer, Sequence("exercise_id_seq"), primary_key=True)
     exercise_name = Column(String(100), nullable=False, unique=True)
     reference_link = Column(String(255))
-    body_part = Column(
-        String(50), Enum(constraints.BodyPartCheck, create_constraint=True)
-    )
+    body_part = Column(String(50), Enum(constraints.BodyPartCheck, create_constraint=True))
     secondary_body_part = Column(
         String(50), Enum(constraints.BodyPartCheck, create_constraint=True)
     )
     rep_type = Column(String(4), Enum(constraints.RepTypeCheck, create_constraint=True))
     user_id = Column(Integer, ForeignKey("app_user.id"))
 
+class WarmUp(Base):
+    __tablename__ = "warmup"
+
+    id = Column(Integer, Sequence("warmup_id_seq"), primary_key=True)
+    num_sets = Column(Integer)
+    default_reps = Column(Integer)
+    default_time = Column(Float)
+    working_percentage = Column(Float)
 
 class RoutineExercise(Base):
     __tablename__ = "routine_exercise"
@@ -91,7 +95,7 @@ class RoutineExercise(Base):
     num_sets = Column(Integer)
     default_reps = Column(Integer)
     default_time = Column(Float)
-
+    warmup_schema = Column(Integer, ForeignKey("warmup.id"))
 
 class ExerciseLog(Base):
     __tablename__ = "exercise_log"
@@ -105,7 +109,6 @@ class ExerciseLog(Base):
     set_num = Column(Integer)
     num_reps = Column(Integer)
     time_duration = Column(Float)
-
 
 class DatabaseInterface:
     def __init__(self, connection_string: str, restart_db: bool = False):
