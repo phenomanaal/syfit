@@ -1,6 +1,14 @@
 from datetime import datetime, timedelta
 import math
-from src.database import user, syfit, measurement, routine, routine_day, exercise
+from src.database import (
+    user,
+    syfit,
+    measurement,
+    routine,
+    routine_day,
+    exercise,
+    routine_exercise,
+)
 import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
@@ -11,6 +19,7 @@ measurement_interface = measurement.Interface(conn_string)
 routine_interface = routine.Interface(conn_string)
 routine_day_interface = routine_day.Interface(conn_string)
 exercise_interface = exercise.Interface(conn_string)
+routine_exercise_interface = routine_exercise.Interface(conn_string)
 
 
 class TestUser:
@@ -444,6 +453,15 @@ class TestRoutineDay:
         test_back = [d for d in days if d.routine_day_name == "BACK & ARMS"]
         assert len(test_back) == 1
 
+    def test_get_routine_day_by_id(self):
+        day = routine_day_interface.get_routine_day_by_id(1)
+
+        assert day.id == 1
+        assert day.routine_id == 1
+        assert day.routine_day_name == "LEGS & GLUTES"
+        assert day.day_of_week == "mon"
+        assert day.day_idx == 0
+
     def test_get_all_days_by_routine_id(self):
         days = routine_day_interface.get_days_by_routine_id(1)
 
@@ -460,6 +478,28 @@ class TestRoutineDay:
 
         test_back = [d for d in days if d.routine_day_name == "BACK & ARMS"]
         assert len(test_back) == 1
+
+    def test_get_routine_day_by_idx(self):
+        day = routine_day_interface.get_routine_day_by_idx(1, 0)
+
+        assert day.id == 1
+        assert day.routine_id == 1
+        assert day.routine_day_name == "LEGS & GLUTES"
+        assert day.day_of_week == "mon"
+        assert day.day_idx == 0
+
+    def test_edit_routine_day(self):
+        routine_day_interface.edit_routine_day(
+            1, routine_day_name="LEGS & BUTT", day_of_week="sun"
+        )
+
+        day = routine_day_interface.get_routine_day_by_id(1)
+
+        assert day.id == 1
+        assert day.routine_id == 1
+        assert day.routine_day_name == "LEGS & BUTT"
+        assert day.day_of_week == "sun"
+        assert day.day_idx == 0
 
     def test_delete_day_by_id(self):
         routine_day_interface.delete_day_by_id(4)
@@ -525,7 +565,11 @@ class TestExercise:
         )
 
         session = exercise_interface.Session()
-        exercises = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == exercise_name).all()
+        exercises = (
+            session.query(syfit.Exercise)
+            .filter(syfit.Exercise.exercise_name == exercise_name)
+            .all()
+        )
 
         assert len(exercises) == 1
         assert isinstance(duplicate_exercise, str)
@@ -533,7 +577,9 @@ class TestExercise:
     def test_get_exercise_by_id(self):
         exercise = exercise_interface.get_exercise_by_id(1)
         session = exercise_interface.Session()
-        query_exercise = session.query(syfit.Exercise).filter(syfit.Exercise.id == 1).first()
+        query_exercise = (
+            session.query(syfit.Exercise).filter(syfit.Exercise.id == 1).first()
+        )
 
         assert exercise.id == query_exercise.id
         assert exercise.exercise_name == query_exercise.exercise_name
@@ -545,7 +591,11 @@ class TestExercise:
     def test_get_exercise_by_name(self):
         exercise = exercise_interface.get_exercise_by_name("bodyweight squat")
         session = exercise_interface.Session()
-        query_exercise = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == "bodyweight squat").first()
+        query_exercise = (
+            session.query(syfit.Exercise)
+            .filter(syfit.Exercise.exercise_name == "bodyweight squat")
+            .first()
+        )
 
         assert exercise.id == query_exercise.id
         assert exercise.exercise_name == query_exercise.exercise_name
@@ -558,24 +608,46 @@ class TestExercise:
         body_part = "upper_legs"
         secondary_body_part = "lower_legs"
         ref_link = "test.com"
-        exercise_interface.add_exercise("barbell squat", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("bulgarian split squat", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("box squat", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("bodyweight lunge", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("leg press", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("sumo squat", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise(
+            "barbell squat", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "bulgarian split squat", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "box squat", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "bodyweight lunge", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "leg press", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "sumo squat", ref_link, body_part, secondary_body_part, "reps"
+        )
 
         body_part = "chest"
         secondary_body_part = "shoulders"
-        exercise_interface.add_exercise("barbell bench press", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("incline bench press", ref_link, body_part, secondary_body_part, "reps")
-        exercise_interface.add_exercise("dumbbell bench press", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise(
+            "barbell bench press", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "incline bench press", ref_link, body_part, secondary_body_part, "reps"
+        )
+        exercise_interface.add_exercise(
+            "dumbbell bench press", ref_link, body_part, secondary_body_part, "reps"
+        )
 
         body_part = "shoulders"
         secondary_body_part = "biceps"
-        exercise_interface.add_exercise("dumbbell arnold press", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise(
+            "dumbbell arnold press", ref_link, body_part, secondary_body_part, "reps"
+        )
         secondary_body_part = "forearms"
-        exercise_interface.add_exercise("dumbbell lateral raise", ref_link, body_part, secondary_body_part, "reps")
+        exercise_interface.add_exercise(
+            "dumbbell lateral raise", ref_link, body_part, secondary_body_part, "reps"
+        )
 
         leg_exercises = exercise_interface.get_exercises_by_body_part("upper_legs")
         chest_exercises = exercise_interface.get_exercises_by_body_part("chest")
@@ -605,10 +677,12 @@ class TestExercise:
         secondary_body_part = None
         rep_type = "reps"
 
-        old_exercise = exercise_interface.add_exercise(name, ref_link, body_part, secondary_body_part, rep_type)
+        old_exercise = exercise_interface.add_exercise(
+            name, ref_link, body_part, secondary_body_part, rep_type
+        )
 
         new_name = "delete me"
-        exercise_interface.edit_exercise(old_exercise.id, exercise_name = new_name)
+        exercise_interface.edit_exercise(old_exercise.id, exercise_name=new_name)
 
         exercise = exercise_interface.get_exercise_by_name(new_name)
 
@@ -626,11 +700,19 @@ class TestExercise:
         exercise_interface.delete_exercise(exercise_id)
 
         session = exercise_interface.Session()
-        exercise = session.query(syfit.Exercise).filter(syfit.Exercise.id == exercise_id).first()
+        exercise = (
+            session.query(syfit.Exercise)
+            .filter(syfit.Exercise.id == exercise_id)
+            .first()
+        )
 
         assert exercise is None
 
-        exercise = session.query(syfit.Exercise).filter(syfit.Exercise.exercise_name == "delete me").first()
+        exercise = (
+            session.query(syfit.Exercise)
+            .filter(syfit.Exercise.exercise_name == "delete me")
+            .first()
+        )
 
         assert exercise is None
 
@@ -639,9 +721,113 @@ class TestExercise:
         ref_link = "used.com"
         body_part = "core"
         secondary_body_part = "back"
-        exercise_interface.add_exercise(name, ref_link, body_part, secondary_body_part, "reps", 1)
+        exercise_interface.add_exercise(
+            name, ref_link, body_part, secondary_body_part, "reps", 1
+        )
 
         exercises = exercise_interface.get_user_created_exercises(1)
 
         assert len(exercises) == 1
 
+
+class TestRoutineExercise:
+
+    def test_add_routine_exercise(self):
+        e = routine_exercise_interface.add_routine_exercise(day_id=1, exercise_id=1)
+
+        assert e.exercise_idx == 0
+
+        e = routine_exercise_interface.add_routine_exercise(day_id=1, exercise_id=2)
+
+        assert e.exercise_idx == 1
+
+        e = routine_exercise_interface.add_routine_exercise(
+            day_id=1, exercise_id=3, num_sets=4, default_reps=12
+        )
+
+        assert e.exercise_idx == 2
+
+        e = routine_exercise_interface.add_routine_exercise(
+            day_id=1, exercise_id=4, default_time=60
+        )
+
+        assert e.exercise_idx == 3
+
+        session = routine_exercise_interface.Session()
+        routine_exercises = (
+            session.query(syfit.RoutineExercise)
+            .filter(syfit.RoutineExercise.day_id == 1)
+            .all()
+        )
+        session.close()
+
+        assert len(routine_exercises) == 4
+
+    def test_get_exercises_by_routine_day(self):
+        exercises = routine_exercise_interface.get_exercises_by_routine_day_id(1)
+        ex_idxs = [e.exercise_idx for e in exercises]
+
+        assert len(exercises) == 4
+        assert list(set(ex_idxs)) == ex_idxs
+
+    def test_get_routine_exercise_by_id(self):
+        exercise = routine_exercise_interface.get_routine_exercise_by_id(3)
+        assert exercise.id == 3
+        assert exercise.day_id == 1
+        assert exercise.exercise_id == 3
+        assert exercise.exercise_idx == 2
+        assert exercise.num_sets == 4
+        assert exercise.default_reps == 12
+        assert exercise.default_time is None
+        assert exercise.warmup_schema is None
+
+    def test_get_routine_exercise_by_idx(self):
+        exercise = routine_exercise_interface.get_routine_exercise_by_idx(1, 2)
+        assert exercise.id == 3
+        assert exercise.day_id == 1
+        assert exercise.exercise_id == 3
+        assert exercise.exercise_idx == 2
+        assert exercise.num_sets == 4
+        assert exercise.default_reps == 12
+        assert exercise.default_time is None
+        assert exercise.warmup_schema is None
+
+    def test_edit_routine_exercise(self):
+        routine_exercise_interface.edit_routine_exercise(3, num_sets=5)
+
+        exercise = routine_exercise_interface.get_routine_exercise_by_id(3)
+        assert exercise.id == 3
+        assert exercise.day_id == 1
+        assert exercise.exercise_id == 3
+        assert exercise.exercise_idx == 2
+        assert exercise.num_sets == 5
+        assert exercise.default_reps == 12
+        assert exercise.default_time is None
+        assert exercise.warmup_schema is None
+
+    def test_delete_exercise_by_id(self):
+        routine_exercise_interface.delete_exercise_by_id(3)
+        exercises = routine_exercise_interface.get_exercises_by_routine_day_id(1)
+
+        assert len(exercises) == 3
+        for n, d in enumerate(exercises):
+            assert n == d.exercise_idx
+
+    def test_delete_exercises_by_day_id(self):
+        routine_exercise_interface.delete_exercises_by_day_id(1)
+
+        session = routine_day_interface.Session()
+
+        exercises = (
+            session.query(syfit.RoutineExercise)
+            .filter(syfit.RoutineExercise.day_id == 1)
+            .all()
+        )
+
+        assert len(exercises) == 0
+
+        routine_day = (
+            session.query(syfit.RoutineDay).filter(syfit.RoutineDay.id == 1).all()
+        )
+
+        assert len(routine_day) == 0

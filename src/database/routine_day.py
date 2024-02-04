@@ -1,4 +1,3 @@
-from sqlalchemy.orm import and_
 from src.database import routine
 from src.database.syfit import RoutineDay
 
@@ -21,6 +20,7 @@ class Interface(routine.Interface):
         session = self.Session()
         session.add(day)
         session.commit()
+        session.refresh(day)
         session.close()
         return day
 
@@ -47,9 +47,8 @@ class Interface(routine.Interface):
 
         routine_day = (
             session.query(RoutineDay)
-            .filter(
-                and_(RoutineDay.routine_id == routine_id, RoutineDay.day_idx == day_idx)
-            )
+            .filter(RoutineDay.routine_id == routine_id)
+            .filter(RoutineDay.day_idx == day_idx)
             .first()
         )
 
@@ -77,6 +76,7 @@ class Interface(routine.Interface):
 
     def reset_day_idxs(self, routine_id: int):
         routine_days = self.get_days_by_routine_id(routine_id)
+        routine_days = sorted(routine_days, key=lambda x: x.day_idx)
 
         session = self.Session()
 

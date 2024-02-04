@@ -1,27 +1,26 @@
-from sqlalchemy.orm import and_
-from src.database.syfit import DatabaseInterface, RoutineExercise
+from src.database.syfit import RoutineExercise
+from src.database import routine_day
 
-
-class Interface(DatabaseInterface):
+class Interface(routine_day.Interface):
 
     def add_routine_exercise(
         self,
-        routine_day_id: int,
+        day_id: int,
         exercise_id: int,
-        exercise_idx: int,
-        num_sets: int,
-        default_reps: int,
-        default_time: float,
-        warmup_schema: int,
+        num_sets: int=3,
+        default_reps: int=10,
+        default_time: float=None,
+        warmup_schema: int=None,
+        exercise_idx: int=None,
     ):
-        routine_exercises = self.get_exercises_by_routine_day_id(routine_day_id)
+        routine_exercises = self.get_exercises_by_routine_day_id(day_id)
         exercise_idxs = [d.exercise_idx for d in routine_exercises]
         if exercise_idxs == []:
             exercise_idx = 0
         else:
             exercise_idx = max(exercise_idxs) + 1
         exercise = RoutineExercise(
-            routine_day_id=routine_day_id,
+            day_id=day_id,
             exercise_id=exercise_id,
             exercise_idx=exercise_idx,
             num_sets=num_sets,
@@ -33,6 +32,7 @@ class Interface(DatabaseInterface):
         session = self.Session()
         session.add(exercise)
         session.commit()
+        session.refresh(exercise)
         session.close()
 
         return exercise
@@ -41,7 +41,7 @@ class Interface(DatabaseInterface):
         session = self.Session()
         routine_exercises = (
             session.query(RoutineExercise)
-            .filter(RoutineExercise.routine_day_id == day_id)
+            .filter(RoutineExercise.day_id == day_id)
             .all()
         )
         session.close()
@@ -63,12 +63,8 @@ class Interface(DatabaseInterface):
         session = self.Session()
         routine_exercise = (
             session.query(RoutineExercise)
-            .filter(
-                and_(
-                    RoutineExercise.day_id == routine_day_id,
-                    RoutineExercise.exercise_idx == exercise_idx,
-                )
-            )
+            .filter(RoutineExercise.day_id == routine_day_id)
+            .filter(RoutineExercise.exercise_idx == exercise_idx)
             .first()
         )
         session.close()
@@ -76,13 +72,13 @@ class Interface(DatabaseInterface):
     
     def edit_routine_exercise(self, routine_exercise_id: int, **kwargs):
         session = self.Session()
-        routine_day_update = {
+        routine_exercise_update = {
             k: v
             for k, v in kwargs.items()
             if k in RoutineExercise.__table__.columns and k != "id"
         }
         session.query(RoutineExercise).filter(RoutineExercise.id == routine_exercise_id).update(
-            routine_day_update
+            routine_exercise_update
         )
         session.commit()
 
@@ -92,8 +88,9 @@ class Interface(DatabaseInterface):
 
         return routine_day
 
-    def reset_exercise_idx(self, day_id: int):
+    def reset_exercise_idxs(self, day_id: int):
         routine_exercises = self.get_exercises_by_routine_day_id(day_id)
+        routine_exercises = sorted(routine_exercises, key=lambda x: x.exercise_idx)
 
         session = self.Session()
 
@@ -102,5 +99,23 @@ class Interface(DatabaseInterface):
                 session.query(RoutineExercise).filter(
                     RoutineExercise.id == e.id
                 ).update({"exercise_idx": n})
+        session.commit()
+        session.close()
+
+    def delete_exercise_by_id(self, routine_exercise_id: int) -> None:
+        session = self.Session()
+        exercise = session.query(RoutineExercise).filter(RoutineExercise.id == routine_exercise_id).first()
+        if exercise:
+            day_id = exercise.day_id
+            session.delete(exercise)
+            session.commit()
+            self.reset_exercise_idxs(day_id)
+        session.close()
+
+    def delete_exercises_by_day_id(self, day_id: int) -> None:
+        self.delete_day_by_id(day_id)
+
+        session = self.Session()
+        session.query(RoutineExercise).filter(RoutineExercise.day_id == day_id).delete()
         session.commit()
         session.close()

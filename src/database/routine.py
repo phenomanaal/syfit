@@ -24,10 +24,8 @@ class Interface(DatabaseInterface):
         session = self.Session()
         session.add(routine)
         session.commit()
-        id = routine.id
+        session.refresh(routine)
         session.close()
-
-        routine = self.get_routine_by_id(id)
 
         return routine
 

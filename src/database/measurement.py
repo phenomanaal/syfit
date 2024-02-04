@@ -39,10 +39,9 @@ class Interface(user.Interface):
             session = self.Session()
             session.add(measurement)
             session.commit()
-            id = measurement.id
-            session.close()
+            session.refresh(measurement)
 
-            measurement = self.get_measurement_by_id(id)
+            session.close()
 
             return measurement
 

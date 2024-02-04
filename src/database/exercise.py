@@ -34,9 +34,10 @@ class Interface(DatabaseInterface):
             if 'UNIQUE constraint failed' in e.args[0]:
                 return "exercise name already in the database"
 
+        session.refresh(exercise)
         session.close()
 
-        return self.get_exercise_by_name(exercise_name)
+        return exercise
 
     def get_exercise_by_id(self, exercise_id: str):
         session = self.Session()
