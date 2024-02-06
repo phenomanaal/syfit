@@ -8,6 +8,7 @@ from src.database import (
     routine_day,
     exercise,
     routine_exercise,
+    exercise_log
 )
 import src.config as config
 
@@ -20,7 +21,7 @@ routine_interface = routine.Interface(conn_string)
 routine_day_interface = routine_day.Interface(conn_string)
 exercise_interface = exercise.Interface(conn_string)
 routine_exercise_interface = routine_exercise.Interface(conn_string)
-
+exercise_log_interface = exercise.Interface(conn_string)
 
 class TestUser:
     def test_add_user(self):
@@ -772,6 +773,7 @@ class TestRoutineExercise:
 
     def test_get_routine_exercise_by_id(self):
         exercise = routine_exercise_interface.get_routine_exercise_by_id(3)
+
         assert exercise.id == 3
         assert exercise.day_id == 1
         assert exercise.exercise_id == 3

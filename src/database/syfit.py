@@ -83,6 +83,15 @@ class WarmUp(Base):
     num_sets = Column(Integer)
     default_reps = Column(Integer)
     default_time = Column(Float)
+
+class WarmUpSet(Base):
+    __tablename__ = "warmup_set"
+
+    id = Column(Integer, Sequence("warmup_set_id_seq"), primary_key=True)
+    warmup_id = Column(Integer, ForeignKey("warmup.id"), nullable=False)
+    set_idx = Column(Integer, nullable=False)
+    num_reps = Column(Integer)
+    time_duration = Column(Float)
     working_percentage = Column(Float)
 
 class RoutineExercise(Base):
@@ -106,7 +115,7 @@ class ExerciseLog(Base):
         Integer, ForeignKey("routine_exercise.id"), nullable=False
     )
     time_stamp = Column(TIMESTAMP, nullable=False)
-    set_num = Column(Integer)
+    set_idx = Column(Integer)
     num_reps = Column(Integer)
     time_duration = Column(Float)
 
