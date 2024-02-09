@@ -98,8 +98,8 @@ class RoutineExercise(Base):
     __tablename__ = "routine_exercise"
 
     id = Column(Integer, Sequence("routine_exercise_id_seq"), primary_key=True)
-    day_id = Column(Integer, ForeignKey("routine_day.id"), nullable=False)
     exercise_id = Column(Integer, ForeignKey("exercise.id"), nullable=False)
+    day_id = Column(Integer, ForeignKey("routine_day.id"), nullable=False)
     exercise_idx = Column(Integer, nullable=False)
     num_sets = Column(Integer)
     default_reps = Column(Integer)
@@ -110,7 +110,6 @@ class ExerciseLog(Base):
     __tablename__ = "exercise_log"
 
     id = Column(Integer, Sequence("exercise_log_id_seq"), primary_key=True)
-    exercise_id = Column(Integer, ForeignKey("exercise.id"), nullable=False)
     routine_exercise_id = Column(
         Integer, ForeignKey("routine_exercise.id"), nullable=False
     )

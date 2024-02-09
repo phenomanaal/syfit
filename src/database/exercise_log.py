@@ -8,7 +8,6 @@ class Interface(routine_exercise.Interface):
 
     def add_log(
         self,
-        exercise_id: int,
         routine_exercise_id: int,
         time_stamp: datetime,
         num_reps: int = None,
@@ -18,19 +17,15 @@ class Interface(routine_exercise.Interface):
         set_idxs = [
             e.set_idx
             for e in exercises
-            if e.time_stamp >= time_stamp + timedelta(minutes=-60)
-            and e.time_stamp <= timedelta(minutes=60)
+            if e.time_stamp >= (time_stamp + timedelta(minutes=-60))
+            and e.time_stamp <= (time_stamp + timedelta(minutes=60))
         ]
-
-        ## TODO: confirm that exercise_id and routine_exercise_id match
-        ## do we even need both? if we have routine_exercise_id why do we need exercise_id?
 
         if len(set_idxs) == 0:
             set_idx = 0
         else:
-            set_idxs = max(set_idxs) + 1
+            set_idx = max(set_idxs) + 1
         exercise = ExerciseLog(
-            exercise_id=exercise_id,
             routine_exercise_id=routine_exercise_id,
             time_stamp=time_stamp,
             set_idx=set_idx,
@@ -79,7 +74,7 @@ class Interface(routine_exercise.Interface):
         )
         session.close()
         return exercise_log
-    
+
     def edit_exercise_log(self, exercise_log_id: int, **kwargs):
         session = self.Session()
         exercise_log_update = {
@@ -97,36 +92,41 @@ class Interface(routine_exercise.Interface):
         exercise_log = self.get_exercise_log_by_id(exercise_log_id)
 
         return exercise_log
-    
+
     def reset_set_idxs(self, routine_exercise_id: int):
-        exercise_logs = self.get_exercise_logs_by_routine_exercise_id(routine_exercise_id)
+        exercise_logs = self.get_exercise_logs_by_routine_exercise_id(
+            routine_exercise_id
+        )
         exercise_logs = sorted(exercise_logs, key=lambda x: x.set_idx)
 
         session = self.Session()
 
         for n, e in enumerate(exercise_logs):
             if e.set_idx != n:
-                session.query(ExerciseLog).filter(
-                    ExerciseLog.id == e.id
-                ).update({"set_idx": n})
+                session.query(ExerciseLog).filter(ExerciseLog.id == e.id).update(
+                    {"set_idx": n}
+                )
         session.commit()
         session.close()
 
     def delete_exercise_log_by_id(self, exercise_log_id: int) -> None:
         session = self.Session()
-        exercise_log = session.query(ExerciseLog).filter(ExerciseLog.id == exercise_log_id).first()
+        exercise_log = (
+            session.query(ExerciseLog).filter(ExerciseLog.id == exercise_log_id).first()
+        )
         if exercise_log:
             routine_exercise_id = exercise_log.routine_exercise_id
             session.delete(exercise_log)
             session.commit()
-            self.reset_exercise_idxs(routine_exercise_id)
+            self.reset_set_idxs(routine_exercise_id)
         session.close()
 
     def delete_exercises_by_routine_exercise_id(self, routine_exercise_id: int) -> None:
         self.delete_exercise_by_id(routine_exercise_id)
 
         session = self.Session()
-        session.query(ExerciseLog).filter(ExerciseLog.routine_exercise_id == routine_exercise_id).delete()
+        session.query(ExerciseLog).filter(
+            ExerciseLog.routine_exercise_id == routine_exercise_id
+        ).delete()
         session.commit()
         session.close()
-
