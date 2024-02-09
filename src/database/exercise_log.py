@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from sqlalchemy import and_
-from src.database.syfit import ExerciseLog
+from src.database.syfit import ExerciseLog, User, Routine, RoutineDay, RoutineExercise
 from src.database import routine_exercise
 
 
@@ -74,6 +74,55 @@ class Interface(routine_exercise.Interface):
         )
         session.close()
         return exercise_log
+
+    def get_exercise_logs_by_user(self, user_id: int):
+        session = self.Session()
+        logs = (
+            session.query(ExerciseLog)
+            .join(RoutineExercise)
+            .join(RoutineDay)
+            .join(Routine)
+            .filter(Routine.user_id == user_id)
+            .all()
+        )
+        session.close()
+        return logs
+
+    def get_exercise_logs_by_routine_exercise(self, routine_exercise_id: int):
+        session = self.Session()
+        logs = (
+            session.query(ExerciseLog)
+            .join(RoutineExercise)
+            .filter(RoutineExercise.id == routine_exercise_id)
+            .all()
+        )
+        session.close()
+        return logs
+
+    def get_exercise_logs_by_routine_day(self, routine_day_id: int):
+        session = self.Session()
+        logs = (
+            session.query(ExerciseLog)
+            .join(RoutineExercise)
+            .join(RoutineDay)
+            .filter(RoutineDay.id == routine_day_id)
+            .all()
+        )
+        session.close()
+        return logs
+
+    def get_exercise_logs_by_routine(self, routine_id: int):
+        session = self.Session()
+        logs = (
+            session.query(ExerciseLog)
+            .join(RoutineExercise)
+            .join(RoutineDay)
+            .join(Routine)
+            .filter(Routine.id == routine_id)
+            .all()
+        )
+        session.close()
+        return logs
 
     def edit_exercise_log(self, exercise_log_id: int, **kwargs):
         session = self.Session()

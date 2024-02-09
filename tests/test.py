@@ -221,6 +221,17 @@ class TestMeasurement:
 
         assert len(measurements) == len(query_measurements)
 
+    def test_get_latest_measurement_by_user(self):
+        latest = measurement_interface.get_latest_measurement_by_user(1)
+
+        measurement_times = [
+            m.measurement_time
+            for m in measurement_interface.get_all_measurement_by_user(1)
+        ]
+        latest_query = max(measurement_times)
+
+        assert latest.measurement_time == latest_query
+
     def test_get_measurement_by_measurement(self):
         session = measurement_interface.Session()
 
@@ -765,12 +776,16 @@ class TestExerciseLog:
         log = exercise_log_interface.get_exercise_log_by_set(1, 1)
 
         session = exercise_interface.Session()
-        query_log = session.query(syfit.ExerciseLog).filter(
-            and_(
-                syfit.ExerciseLog.routine_exercise_id == 1,
-                syfit.ExerciseLog.set_idx == 1,
+        query_log = (
+            session.query(syfit.ExerciseLog)
+            .filter(
+                and_(
+                    syfit.ExerciseLog.routine_exercise_id == 1,
+                    syfit.ExerciseLog.set_idx == 1,
+                )
             )
-        ).first()
+            .first()
+        )
 
         assert log.id == query_log.id
         assert log.routine_exercise_id == query_log.routine_exercise_id
@@ -786,15 +801,10 @@ class TestExerciseLog:
 
         assert log.num_reps == 9
 
-    def test_delete_exercise_log_by_id(self):
-        num_logs_before = len(exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1))
-        exercise_log_interface.delete_exercise_log_by_id(2)
-        logs = exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1)
-
-        assert len(logs) == num_logs_before - 1
-
-        for n, l in enumerate(logs):
-            assert l.set_idx == n
+    def test_get_exercise_log_by_routine_exercise(self):
+        logs = exercise_log_interface.get_exercise_logs_by_routine_exercise(1)
+        for l in logs:
+            assert l.routine_exercise_id == 1
 
 
 class TestDelete:
@@ -925,6 +935,22 @@ class TestDelete:
 
         session = exercise_log_interface.Session()
 
-        logs = session.query(syfit.ExerciseLog).filter(syfit.ExerciseLog.routine_exercise_id == 1).all()
-        
+        logs = (
+            session.query(syfit.ExerciseLog)
+            .filter(syfit.ExerciseLog.routine_exercise_id == 1)
+            .all()
+        )
+
         assert len(logs) == 0
+
+    def test_delete_exercise_log_by_id(self):
+        num_logs_before = len(
+            exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1)
+        )
+        exercise_log_interface.delete_exercise_log_by_id(2)
+        logs = exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1)
+
+        assert len(logs) == num_logs_before - 1
+
+        for n, l in enumerate(logs):
+            assert l.set_idx == n

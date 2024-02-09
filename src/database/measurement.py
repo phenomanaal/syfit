@@ -90,6 +90,17 @@ class Interface(user.Interface):
         session.close()
         return measurements
 
+    def get_latest_measurement_by_user(self, user_id):
+        session = self.Session()
+        measurement = (
+            session.query(Measurement)
+            .filter(Measurement.user_id == user_id)
+            .order_by(Measurement.measurement_time.desc())
+            .first()
+        )
+        session.close()
+        return measurement
+
     def edit_measurement(self, measurement_id: int, **kwargs) -> Measurement:
         session = self.Session()
         measurement_update = {
