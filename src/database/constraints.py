@@ -1,5 +1,6 @@
 import enum
 
+
 class MeasurementSystemCheck(enum.Enum):
     imperial = "imperial"
     metric = "metric"

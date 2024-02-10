@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List
 from sqlalchemy.orm.session import Session
-from src.database.syfit import Measurement, User
+from src.database.common import Measurement, User
 from src.database import user
 
 

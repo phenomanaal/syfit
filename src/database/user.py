@@ -1,4 +1,4 @@
-from src.database.syfit import DatabaseInterface, User
+from src.database.common import DatabaseInterface, User
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
@@ -27,7 +27,7 @@ class Interface(DatabaseInterface):
             session.commit()
         except IntegrityError as e:
             session.close()
-            if 'UNIQUE constraint failed' in e.args[0]:
+            if "UNIQUE constraint failed" in e.args[0]:
                 return "duplicate username"
 
         user = self.get_user_by_username(username)

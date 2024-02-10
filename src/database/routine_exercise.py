@@ -1,5 +1,6 @@
-from src.database.syfit import RoutineExercise
+from src.database.common import RoutineExercise
 from src.database import routine_day
+
 
 class Interface(routine_day.Interface):
 
@@ -7,11 +8,11 @@ class Interface(routine_day.Interface):
         self,
         day_id: int,
         exercise_id: int,
-        num_sets: int=3,
-        default_reps: int=10,
-        default_time: float=None,
-        warmup_schema: int=None,
-        exercise_idx: int=None,
+        num_sets: int = 3,
+        default_reps: int = 10,
+        default_time: float = None,
+        warmup_schema: int = None,
+        exercise_idx: int = None,
     ):
         routine_exercises = self.get_exercises_by_routine_day_id(day_id)
         exercise_idxs = [d.exercise_idx for d in routine_exercises]
@@ -69,7 +70,7 @@ class Interface(routine_day.Interface):
         )
         session.close()
         return routine_exercise
-    
+
     def edit_routine_exercise(self, routine_exercise_id: int, **kwargs):
         session = self.Session()
         routine_exercise_update = {
@@ -77,9 +78,9 @@ class Interface(routine_day.Interface):
             for k, v in kwargs.items()
             if k in RoutineExercise.__table__.columns and k != "id"
         }
-        session.query(RoutineExercise).filter(RoutineExercise.id == routine_exercise_id).update(
-            routine_exercise_update
-        )
+        session.query(RoutineExercise).filter(
+            RoutineExercise.id == routine_exercise_id
+        ).update(routine_exercise_update)
         session.commit()
 
         routine_day = self.get_routine_exercise_by_id(routine_exercise_id)
@@ -104,7 +105,11 @@ class Interface(routine_day.Interface):
 
     def delete_exercise_by_id(self, routine_exercise_id: int) -> None:
         session = self.Session()
-        exercise = session.query(RoutineExercise).filter(RoutineExercise.id == routine_exercise_id).first()
+        exercise = (
+            session.query(RoutineExercise)
+            .filter(RoutineExercise.id == routine_exercise_id)
+            .first()
+        )
         if exercise:
             day_id = exercise.day_id
             session.delete(exercise)

@@ -1,4 +1,4 @@
-from src.database.syfit import DatabaseInterface, Exercise
+from src.database.common import DatabaseInterface, Exercise
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 
@@ -12,7 +12,7 @@ class Interface(DatabaseInterface):
         body_part: str,
         secondary_body_part: str,
         rep_type: str,
-        user_id: int=None
+        user_id: int = None,
     ):
         exercise_name = exercise_name.lower()
         exercise = Exercise(
@@ -21,7 +21,7 @@ class Interface(DatabaseInterface):
             body_part=body_part,
             secondary_body_part=secondary_body_part,
             rep_type=rep_type,
-            user_id=user_id
+            user_id=user_id,
         )
 
         session = self.Session()
@@ -31,7 +31,7 @@ class Interface(DatabaseInterface):
             session.commit()
         except IntegrityError as e:
             session.close()
-            if 'UNIQUE constraint failed' in e.args[0]:
+            if "UNIQUE constraint failed" in e.args[0]:
                 return "exercise name already in the database"
 
         session.refresh(exercise)
@@ -59,24 +59,33 @@ class Interface(DatabaseInterface):
         session = self.Session()
         exercises = (
             session.query(Exercise)
-            .filter(or_(Exercise.body_part == body_part, Exercise.secondary_body_part == body_part))
+            .filter(
+                or_(
+                    Exercise.body_part == body_part,
+                    Exercise.secondary_body_part == body_part,
+                )
+            )
             .all()
         )
         session.close()
         return exercises
-    
+
     def get_exercises_match_string(self, search_string: str):
         session = self.Session()
-        exercise = session.query(Exercise).filter(Exercise.exercise_name.contains(search_string)).all()
+        exercise = (
+            session.query(Exercise)
+            .filter(Exercise.exercise_name.contains(search_string))
+            .all()
+        )
         session.close()
         return exercise
-    
+
     def get_user_created_exercises(self, user_id):
         session = self.Session()
         exercises = session.query(Exercise).filter(Exercise.user_id == user_id).all()
         session.close()
         return exercises
-    
+
     def edit_exercise(self, exercise_id: int, **kwargs):
         session = self.Session()
         exercise_update = {
@@ -94,7 +103,7 @@ class Interface(DatabaseInterface):
         session.close()
 
         return exercise
-    
+
     def delete_exercise(self, exercise_id: int) -> None:
         session = self.Session()
         exercise = self.get_exercise_by_id(exercise_id)

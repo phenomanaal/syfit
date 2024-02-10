@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 import math
 from sqlalchemy import and_
+from src.database.syfit import Syfit
 from src.database import (
+    common,
     user,
-    syfit,
     measurement,
     routine,
     routine_day,
@@ -14,20 +15,12 @@ from src.database import (
 import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
-
-db_interface = syfit.DatabaseInterface(conn_string, restart_db=True)
-user_interface = user.Interface(conn_string)
-measurement_interface = measurement.Interface(conn_string)
-routine_interface = routine.Interface(conn_string)
-routine_day_interface = routine_day.Interface(conn_string)
-exercise_interface = exercise.Interface(conn_string)
-routine_exercise_interface = routine_exercise.Interface(conn_string)
-exercise_log_interface = exercise_log.Interface(conn_string)
+db = Syfit(conn_string, reset_db=True)
 
 
 class TestUser:
     def test_add_user(self):
-        add_user = user_interface.add_user(
+        add_user = db.user.add_user(
             "Test",
             "User",
             "testuser2023",
@@ -35,10 +28,10 @@ class TestUser:
             "imperial",
         )
 
-        session = user_interface.Session()
+        session = db.Session()
         get_user = (
-            session.query(syfit.User)
-            .filter(syfit.User.username == "testuser2023")
+            session.query(common.User)
+            .filter(common.User.username == "testuser2023")
             .first()
         )
 
@@ -54,15 +47,15 @@ class TestUser:
         session.close()
 
     def test_add_duplicate_username(self):
-        duplicate_user = user_interface.add_user(
+        duplicate_user = db.user.add_user(
             "NewTest", "User", "testuser2023", datetime.utcnow().date(), "metric"
         )
 
-        session = user_interface.Session()
+        session = db.Session()
 
         get_user = (
-            session.query(syfit.User)
-            .filter(syfit.User.username == "testuser2023")
+            session.query(common.User)
+            .filter(common.User.username == "testuser2023")
             .all()
         )
 
@@ -75,7 +68,7 @@ class TestUser:
         session.close()
 
     def test_get_all_users(self):
-        users = user_interface.get_all_users()
+        users = db.user.get_all_users()
 
         assert len(users) == 1
 
@@ -88,7 +81,7 @@ class TestUser:
         assert test_user.measurement_system == "imperial"
 
     def test_get_user_by_id(self):
-        test_user = user_interface.get_user_by_id(1)
+        test_user = db.user.get_user_by_id(1)
 
         assert test_user.id == 1
         assert test_user.first_name == "Test"
@@ -96,10 +89,10 @@ class TestUser:
         assert test_user.username == "testuser2023"
         assert test_user.DOB == datetime.strptime("1/25/2023", "%m/%d/%Y").date()
         assert test_user.measurement_system == "imperial"
-        assert user_interface.get_user_by_id(23424234) is None
+        assert db.user.get_user_by_id(23424234) is None
 
     def test_get_user_by_username(self):
-        test_user = user_interface.get_user_by_username("testuser2023")
+        test_user = db.user.get_user_by_username("testuser2023")
 
         assert test_user.id == 1
         assert test_user.first_name == "Test"
@@ -107,20 +100,20 @@ class TestUser:
         assert test_user.username == "testuser2023"
         assert test_user.DOB == datetime.strptime("1/25/2023", "%m/%d/%Y").date()
         assert test_user.measurement_system == "imperial"
-        assert user_interface.get_user_by_username("asdf") is None
+        assert db.user.get_user_by_username("asdf") is None
 
     def test_change_username_by_id(self):
-        user_ = user_interface.change_username_by_id(1, "newusername23")
+        user_ = db.user.change_username_by_id(1, "newusername23")
 
-        session = user_interface.Session()
+        session = db.Session()
 
         test_user = (
-            session.query(syfit.User)
-            .filter(syfit.User.username == "newusername23")
+            session.query(common.User)
+            .filter(common.User.username == "newusername23")
             .first()
         )
 
-        user_ = session.query(syfit.User).filter(syfit.User.id == 1).first()
+        user_ = session.query(common.User).filter(common.User.id == 1).first()
 
         session.close()
 
@@ -129,19 +122,17 @@ class TestUser:
         assert user_.username == "testuser2023"
 
     def test_change_username_by_username(self):
-        user_ = user_interface.change_username_by_username(
-            "testuser2023", "newusername23"
-        )
+        user_ = db.user.change_username_by_username("testuser2023", "newusername23")
 
-        session = user_interface.Session()
+        session = db.Session()
 
         test_user = (
-            session.query(syfit.User)
-            .filter(syfit.User.username == "newusername23")
+            session.query(common.User)
+            .filter(common.User.username == "newusername23")
             .first()
         )
 
-        user_ = session.query(syfit.User).filter(syfit.User.id == 1).first()
+        user_ = session.query(common.User).filter(common.User.id == 1).first()
 
         session.close()
 
@@ -154,12 +145,12 @@ class TestUser:
 
 class TestMeasurement:
     def test_add_measurement(self):
-        session = measurement_interface.Session()
+        session = db.Session()
 
-        measurement_interface.add_measurement(1, None, height=60, body_weight=125)
+        db.measurement.add_measurement(1, None, height=60, body_weight=125)
 
         test_measurement = (
-            session.query(syfit.Measurement).filter(syfit.Measurement.id == 1).first()
+            session.query(common.Measurement).filter(common.Measurement.id == 1).first()
         )
 
         assert test_measurement is not None
@@ -170,30 +161,30 @@ class TestMeasurement:
     def test_get_all_measurements_by_user(self):
         user_id = 1
 
-        measurement_interface.add_measurement(
+        db.measurement.add_measurement(
             user_id, datetime.utcnow() + timedelta(days=-120), body_weight=150
         )
-        measurement_interface.add_measurement(
+        db.measurement.add_measurement(
             user_id, datetime.utcnow() + timedelta(days=-100), body_weight=145
         )
-        measurement_interface.add_measurement(
+        db.measurement.add_measurement(
             user_id, datetime.utcnow() + timedelta(days=-80), body_weight=140
         )
-        measurement_interface.add_measurement(
+        db.measurement.add_measurement(
             user_id, datetime.utcnow() + timedelta(days=-60), body_weight=135
         )
-        measurement_interface.add_measurement(
+        db.measurement.add_measurement(
             user_id, datetime.utcnow() + timedelta(days=-30), body_weight=130
         )
 
-        measurements = measurement_interface.get_all_measurement_by_user(user_id)
+        measurements = db.measurement.get_all_measurement_by_user(user_id)
         body_weights = [m.body_weight for m in measurements]
 
-        session = measurement_interface.Session()
+        session = db.Session()
 
         query_measurements = (
-            session.query(syfit.Measurement)
-            .filter(syfit.Measurement.user_id == user_id)
+            session.query(common.Measurement)
+            .filter(common.Measurement.user_id == user_id)
             .all()
         )
         query_body_weights = [m.body_weight for m in query_measurements]
@@ -206,36 +197,35 @@ class TestMeasurement:
         start_time = (datetime.utcnow() + timedelta(days=-120)).date()
         end_time = (datetime.utcnow() + timedelta(days=-59)).date()
 
-        session = measurement_interface.Session()
+        session = db.Session()
 
-        measurements = measurement_interface.get_all_measurements_by_user_by_date(
+        measurements = db.measurement.get_all_measurements_by_user_by_date(
             1, start_time, end_time
         )
 
         query_measurements = (
-            session.query(syfit.Measurement)
-            .filter(syfit.Measurement.measurement_time >= start_time)
-            .filter(syfit.Measurement.measurement_time < end_time)
+            session.query(common.Measurement)
+            .filter(common.Measurement.measurement_time >= start_time)
+            .filter(common.Measurement.measurement_time < end_time)
             .all()
         )
 
         assert len(measurements) == len(query_measurements)
 
     def test_get_latest_measurement_by_user(self):
-        latest = measurement_interface.get_latest_measurement_by_user(1)
+        latest = db.measurement.get_latest_measurement_by_user(1)
 
         measurement_times = [
-            m.measurement_time
-            for m in measurement_interface.get_all_measurement_by_user(1)
+            m.measurement_time for m in db.measurement.get_all_measurement_by_user(1)
         ]
         latest_query = max(measurement_times)
 
         assert latest.measurement_time == latest_query
 
     def test_get_measurement_by_measurement(self):
-        session = measurement_interface.Session()
+        session = db.Session()
 
-        measurements = measurement_interface.get_measurement_by_measurements(
+        measurements = db.measurement.get_measurement_by_measurements(
             user_id=1, body_weight=125
         )
 
@@ -244,9 +234,9 @@ class TestMeasurement:
         measurement = measurements[0]
 
         query_measurement = (
-            session.query(syfit.Measurement)
+            session.query(common.Measurement)
             .filter(
-                syfit.Measurement.user_id == 1, syfit.Measurement.body_weight == 125
+                common.Measurement.user_id == 1, common.Measurement.body_weight == 125
             )
             .first()
         )
@@ -255,22 +245,22 @@ class TestMeasurement:
         assert measurement.body_weight == query_measurement.body_weight
         assert measurement.height == query_measurement.height
 
-        measurement_interface.add_measurement(
+        db.measurement.add_measurement(
             1, datetime.utcnow() + timedelta(days=30), body_weight=130
         )
 
-        measurements = measurement_interface.get_measurement_by_measurements(
+        measurements = db.measurement.get_measurement_by_measurements(
             user_id=1, body_weight=130
         )
 
         assert len(measurements) == 2
 
     def test_get_measurement_by_id(self):
-        session = measurement_interface.Session()
-        measurement = measurement_interface.get_measurement_by_id(1)
+        session = db.Session()
+        measurement = db.measurement.get_measurement_by_id(1)
 
         query_measurement = (
-            session.query(syfit.Measurement).filter(syfit.Measurement.id == 1).first()
+            session.query(common.Measurement).filter(common.Measurement.id == 1).first()
         )
 
         assert measurement.id == query_measurement.id
@@ -279,14 +269,14 @@ class TestMeasurement:
         assert measurement.body_weight == query_measurement.body_weight
 
     def test_edit_measurement(self):
-        measurement_interface.edit_measurement(
+        db.measurement.edit_measurement(
             7, measurement_time=datetime.utcnow() + timedelta(days=-10), body_weight=127
         )
 
-        session = measurement_interface.Session()
+        session = db.Session()
 
         query_measurement = (
-            session.query(syfit.Measurement).filter(syfit.Measurement.id == 7).first()
+            session.query(common.Measurement).filter(common.Measurement.id == 7).first()
         )
 
         assert query_measurement.body_weight == 127
@@ -296,12 +286,12 @@ class TestMeasurement:
         )
 
     def test_change_measurement_system(self):
-        measurements = measurement_interface.get_all_measurement_by_user(1)
+        measurements = db.measurement.get_all_measurement_by_user(1)
 
-        measurement_interface.change_measurement_system(1, 1)
-        measurement_interface.change_measurement_system(1, 1)
+        db.measurement.change_measurement_system(1, 1)
+        db.measurement.change_measurement_system(1, 1)
 
-        new_measurements = measurement_interface.get_all_measurement_by_user(1)
+        new_measurements = db.measurement.get_all_measurement_by_user(1)
 
         for m in measurements:
             new_measurement = [n for n in new_measurements if n.id == m.id]
@@ -328,10 +318,12 @@ class TestRoutine:
         user_id = 1
         routine_name = "TEST ROUTINE"
         num_days = 4
-        routine_interface.add_routine(user_id, routine_name, num_days)
+        db.routine.add_routine(user_id, routine_name, num_days)
 
-        session = routine_interface.Session()
-        routine = session.query(syfit.Routine).filter(syfit.Routine.user_id == 1).all()
+        session = db.Session()
+        routine = (
+            session.query(common.Routine).filter(common.Routine.user_id == 1).all()
+        )
 
         assert len(routine) == 1
 
@@ -343,51 +335,49 @@ class TestRoutine:
         assert routine.is_current == True
 
     def test_get_all_user_routines(self):
-        routine = routine_interface.get_all_user_routines(1)
+        routine = db.routine.get_all_user_routines(1)
 
         assert len(routine) == 1
         routine = routine[0]
 
-        assert isinstance(routine, syfit.Routine)
+        assert isinstance(routine, common.Routine)
         assert routine.user_id == 1
         assert routine.routine_name == "TEST ROUTINE"
         assert routine.num_days == 4
 
     def test_get_routine_by_id(self):
-        routine = routine_interface.get_routine_by_id(1)
+        routine = db.routine.get_routine_by_id(1)
 
-        assert isinstance(routine, syfit.Routine)
+        assert isinstance(routine, common.Routine)
         assert routine.user_id == 1
         assert routine.routine_name == "TEST ROUTINE"
         assert routine.num_days == 4
 
     def test_edit_routine(self):
-        routine_interface.edit_routine(
-            1, routine_name="CHANGED ROUTINE NAME", num_days=5
-        )
+        db.routine.edit_routine(1, routine_name="CHANGED ROUTINE NAME", num_days=5)
 
-        routine = routine_interface.get_routine_by_id(1)
+        routine = db.routine.get_routine_by_id(1)
 
         assert routine.user_id == 1
         assert routine.routine_name == "CHANGED ROUTINE NAME"
         assert routine.num_days == 5
 
     def test_make_routine_not_current(self):
-        assert routine_interface.get_routine_by_id(1).is_current == True
+        assert db.routine.get_routine_by_id(1).is_current == True
 
-        routine_interface.make_routine_not_current(1)
+        db.routine.make_routine_not_current(1)
 
-        routine = routine_interface.get_routine_by_id(1)
+        routine = db.routine.get_routine_by_id(1)
 
         assert routine.is_current == False
 
     def test_make_routine_current(self):
-        routine_interface.add_routine(1, "NEW ROUTINE", 3)
+        db.routine.add_routine(1, "NEW ROUTINE", 3)
 
-        routine_interface.make_routine_current(1)
+        db.routine.make_routine_current(1)
 
-        routine = routine_interface.get_routine_by_id(1)
-        new_routine = routine_interface.get_routine_by_id(2)
+        routine = db.routine.get_routine_by_id(1)
+        new_routine = db.routine.get_routine_by_id(2)
 
         assert routine.is_current == True
         assert new_routine.is_current == False
@@ -395,17 +385,17 @@ class TestRoutine:
 
 class TestRoutineDay:
     def test_add_routine_day(self):
-        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "mon")
-        routine_day_interface.add_routine_day(1, "CHEST & ABS", "tue")
-        routine_day_interface.add_routine_day(1, "BACK & ARMS", "wed")
-        routine_day_interface.add_routine_day(1, "CARDIO", "thu")
-        routine_day_interface.add_routine_day(1, "LEGS & GLUTES", "fri")
+        db.routine_day.add_routine_day(1, "LEGS & GLUTES", "mon")
+        db.routine_day.add_routine_day(1, "CHEST & ABS", "tue")
+        db.routine_day.add_routine_day(1, "BACK & ARMS", "wed")
+        db.routine_day.add_routine_day(1, "CARDIO", "thu")
+        db.routine_day.add_routine_day(1, "LEGS & GLUTES", "fri")
 
-        session = routine_day_interface.Session()
+        session = db.Session()
 
         days = (
-            session.query(syfit.RoutineDay)
-            .filter(syfit.RoutineDay.routine_id == 1)
+            session.query(common.RoutineDay)
+            .filter(common.RoutineDay.routine_id == 1)
             .all()
         )
 
@@ -424,7 +414,7 @@ class TestRoutineDay:
         assert len(test_back) == 1
 
     def test_get_routine_day_by_id(self):
-        day = routine_day_interface.get_routine_day_by_id(1)
+        day = db.routine_day.get_routine_day_by_id(1)
 
         assert day.id == 1
         assert day.routine_id == 1
@@ -433,7 +423,7 @@ class TestRoutineDay:
         assert day.day_idx == 0
 
     def test_get_all_days_by_routine_id(self):
-        days = routine_day_interface.get_days_by_routine_id(1)
+        days = db.routine_day.get_days_by_routine_id(1)
 
         assert len(days) == 5
 
@@ -450,7 +440,7 @@ class TestRoutineDay:
         assert len(test_back) == 1
 
     def test_get_routine_day_by_idx(self):
-        day = routine_day_interface.get_routine_day_by_idx(1, 0)
+        day = db.routine_day.get_routine_day_by_idx(1, 0)
 
         assert day.id == 1
         assert day.routine_id == 1
@@ -459,11 +449,11 @@ class TestRoutineDay:
         assert day.day_idx == 0
 
     def test_edit_routine_day(self):
-        routine_day_interface.edit_routine_day(
+        db.routine_day.edit_routine_day(
             1, routine_day_name="LEGS & BUTT", day_of_week="sun"
         )
 
-        day = routine_day_interface.get_routine_day_by_id(1)
+        day = db.routine_day.get_routine_day_by_id(1)
 
         assert day.id == 1
         assert day.routine_id == 1
@@ -480,12 +470,12 @@ class TestExercise:
         secondary_body_part = "lower_legs"
         rep_type = "reps"
 
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             exercise_name, reference_link, body_part, secondary_body_part, rep_type
         )
 
-        session = exercise_interface.Session()
-        exercises = session.query(syfit.Exercise).all()
+        session = db.Session()
+        exercises = session.query(common.Exercise).all()
 
         assert len(exercises) == 1
         query_exercise = exercises[0]
@@ -503,14 +493,14 @@ class TestExercise:
         secondary_body_part = "lower_legs"
         rep_type = "reps"
 
-        duplicate_exercise = exercise_interface.add_exercise(
+        duplicate_exercise = db.exercise.add_exercise(
             exercise_name, reference_link, body_part, secondary_body_part, rep_type
         )
 
-        session = exercise_interface.Session()
+        session = db.Session()
         exercises = (
-            session.query(syfit.Exercise)
-            .filter(syfit.Exercise.exercise_name == exercise_name)
+            session.query(common.Exercise)
+            .filter(common.Exercise.exercise_name == exercise_name)
             .all()
         )
 
@@ -518,10 +508,10 @@ class TestExercise:
         assert isinstance(duplicate_exercise, str)
 
     def test_get_exercise_by_id(self):
-        exercise = exercise_interface.get_exercise_by_id(1)
-        session = exercise_interface.Session()
+        exercise = db.exercise.get_exercise_by_id(1)
+        session = db.Session()
         query_exercise = (
-            session.query(syfit.Exercise).filter(syfit.Exercise.id == 1).first()
+            session.query(common.Exercise).filter(common.Exercise.id == 1).first()
         )
 
         assert exercise.id == query_exercise.id
@@ -532,11 +522,11 @@ class TestExercise:
         assert exercise.rep_type == query_exercise.rep_type
 
     def test_get_exercise_by_name(self):
-        exercise = exercise_interface.get_exercise_by_name("bodyweight squat")
-        session = exercise_interface.Session()
+        exercise = db.exercise.get_exercise_by_name("bodyweight squat")
+        session = db.Session()
         query_exercise = (
-            session.query(syfit.Exercise)
-            .filter(syfit.Exercise.exercise_name == "bodyweight squat")
+            session.query(common.Exercise)
+            .filter(common.Exercise.exercise_name == "bodyweight squat")
             .first()
         )
 
@@ -551,52 +541,52 @@ class TestExercise:
         body_part = "upper_legs"
         secondary_body_part = "lower_legs"
         ref_link = "test.com"
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "barbell squat", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "bulgarian split squat", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "box squat", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "bodyweight lunge", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "leg press", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "sumo squat", ref_link, body_part, secondary_body_part, "reps"
         )
 
         body_part = "chest"
         secondary_body_part = "shoulders"
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "barbell bench press", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "incline bench press", ref_link, body_part, secondary_body_part, "reps"
         )
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "dumbbell bench press", ref_link, body_part, secondary_body_part, "reps"
         )
 
         body_part = "shoulders"
         secondary_body_part = "biceps"
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "dumbbell arnold press", ref_link, body_part, secondary_body_part, "reps"
         )
         secondary_body_part = "forearms"
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             "dumbbell lateral raise", ref_link, body_part, secondary_body_part, "reps"
         )
 
-        leg_exercises = exercise_interface.get_exercises_by_body_part("upper_legs")
-        chest_exercises = exercise_interface.get_exercises_by_body_part("chest")
-        shoulder_exercises = exercise_interface.get_exercises_by_body_part("shoulders")
-        bicep_exercises = exercise_interface.get_exercises_by_body_part("biceps")
-        forearm_exercises = exercise_interface.get_exercises_by_body_part("forearms")
+        leg_exercises = db.exercise.get_exercises_by_body_part("upper_legs")
+        chest_exercises = db.exercise.get_exercises_by_body_part("chest")
+        shoulder_exercises = db.exercise.get_exercises_by_body_part("shoulders")
+        bicep_exercises = db.exercise.get_exercises_by_body_part("biceps")
+        forearm_exercises = db.exercise.get_exercises_by_body_part("forearms")
 
         assert len(leg_exercises) == 7
         assert len(chest_exercises) == 3
@@ -605,9 +595,9 @@ class TestExercise:
         assert len(forearm_exercises) == 1
 
     def test_get_exercises_match_string(self):
-        squats = exercise_interface.get_exercises_match_string("squat")
-        press = exercise_interface.get_exercises_match_string("press")
-        dumbbell = exercise_interface.get_exercises_match_string("dumbbell")
+        squats = db.exercise.get_exercises_match_string("squat")
+        press = db.exercise.get_exercises_match_string("press")
+        dumbbell = db.exercise.get_exercises_match_string("dumbbell")
 
         assert len(squats) == 5
         assert len(press) == 5
@@ -620,16 +610,16 @@ class TestExercise:
         secondary_body_part = None
         rep_type = "reps"
 
-        old_exercise = exercise_interface.add_exercise(
+        old_exercise = db.exercise.add_exercise(
             name, ref_link, body_part, secondary_body_part, rep_type
         )
 
         new_name = "delete me"
-        exercise_interface.edit_exercise(old_exercise.id, exercise_name=new_name)
+        db.exercise.edit_exercise(old_exercise.id, exercise_name=new_name)
 
-        exercise = exercise_interface.get_exercise_by_name(new_name)
+        exercise = db.exercise.get_exercise_by_name(new_name)
 
-        assert exercise_interface.get_exercise_by_name(name) is None
+        assert db.exercise.get_exercise_by_name(name) is None
         assert exercise is not None
         assert exercise.id == old_exercise.id
         assert exercise.reference_link == ref_link
@@ -642,11 +632,11 @@ class TestExercise:
         ref_link = "used.com"
         body_part = "core"
         secondary_body_part = "back"
-        exercise_interface.add_exercise(
+        db.exercise.add_exercise(
             name, ref_link, body_part, secondary_body_part, "reps", 1
         )
 
-        exercises = exercise_interface.get_user_created_exercises(1)
+        exercises = db.exercise.get_user_created_exercises(1)
 
         assert len(exercises) == 1
 
@@ -654,30 +644,30 @@ class TestExercise:
 class TestRoutineExercise:
 
     def test_add_routine_exercise(self):
-        e = routine_exercise_interface.add_routine_exercise(day_id=1, exercise_id=1)
+        e = db.routine_exercise.add_routine_exercise(day_id=1, exercise_id=1)
 
         assert e.exercise_idx == 0
 
-        e = routine_exercise_interface.add_routine_exercise(day_id=1, exercise_id=2)
+        e = db.routine_exercise.add_routine_exercise(day_id=1, exercise_id=2)
 
         assert e.exercise_idx == 1
 
-        e = routine_exercise_interface.add_routine_exercise(
+        e = db.routine_exercise.add_routine_exercise(
             day_id=1, exercise_id=3, num_sets=4, default_reps=12
         )
 
         assert e.exercise_idx == 2
 
-        e = routine_exercise_interface.add_routine_exercise(
+        e = db.routine_exercise.add_routine_exercise(
             day_id=1, exercise_id=4, default_time=60
         )
 
         assert e.exercise_idx == 3
 
-        session = routine_exercise_interface.Session()
+        session = db.Session()
         routine_exercises = (
-            session.query(syfit.RoutineExercise)
-            .filter(syfit.RoutineExercise.day_id == 1)
+            session.query(common.RoutineExercise)
+            .filter(common.RoutineExercise.day_id == 1)
             .all()
         )
         session.close()
@@ -685,14 +675,14 @@ class TestRoutineExercise:
         assert len(routine_exercises) == 4
 
     def test_get_exercises_by_routine_day(self):
-        exercises = routine_exercise_interface.get_exercises_by_routine_day_id(1)
+        exercises = db.routine_exercise.get_exercises_by_routine_day_id(1)
         ex_idxs = [e.exercise_idx for e in exercises]
 
         assert len(exercises) == 4
         assert list(set(ex_idxs)) == ex_idxs
 
     def test_get_routine_exercise_by_id(self):
-        exercise = routine_exercise_interface.get_routine_exercise_by_id(3)
+        exercise = db.routine_exercise.get_routine_exercise_by_id(3)
 
         assert exercise.id == 3
         assert exercise.day_id == 1
@@ -704,7 +694,7 @@ class TestRoutineExercise:
         assert exercise.warmup_schema is None
 
     def test_get_routine_exercise_by_idx(self):
-        exercise = routine_exercise_interface.get_routine_exercise_by_idx(1, 2)
+        exercise = db.routine_exercise.get_routine_exercise_by_idx(1, 2)
         assert exercise.id == 3
         assert exercise.day_id == 1
         assert exercise.exercise_id == 3
@@ -715,9 +705,9 @@ class TestRoutineExercise:
         assert exercise.warmup_schema is None
 
     def test_edit_routine_exercise(self):
-        routine_exercise_interface.edit_routine_exercise(3, num_sets=5)
+        db.routine_exercise.edit_routine_exercise(3, num_sets=5)
 
-        exercise = routine_exercise_interface.get_routine_exercise_by_id(3)
+        exercise = db.routine_exercise.get_routine_exercise_by_id(3)
         assert exercise.id == 3
         assert exercise.day_id == 1
         assert exercise.exercise_id == 3
@@ -730,39 +720,39 @@ class TestRoutineExercise:
 
 class TestExerciseLog:
     def test_add_exercise_log(self):
-        exercise_log_interface.add_log(1, datetime.utcnow(), 10)
-        exercise_log_interface.add_log(1, datetime.utcnow(), 10)
-        exercise_log_interface.add_log(1, datetime.utcnow(), 10)
+        db.exercise_log.add_log(1, datetime.utcnow(), 10)
+        db.exercise_log.add_log(1, datetime.utcnow(), 10)
+        db.exercise_log.add_log(1, datetime.utcnow(), 10)
 
-        session = exercise_log_interface.Session()
+        session = db.Session()
         logs = (
-            session.query(syfit.ExerciseLog)
-            .filter(syfit.ExerciseLog.routine_exercise_id == 1)
+            session.query(common.ExerciseLog)
+            .filter(common.ExerciseLog.routine_exercise_id == 1)
             .all()
         )
 
         assert len(logs) == 3
 
     def test_get_exercise_logs_by_routine_exercise_id(self):
-        logs = exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1)
+        logs = db.exercise_log.get_exercise_logs_by_routine_exercise_id(1)
 
-        session = exercise_log_interface.Session()
+        session = db.Session()
 
         query_logs = (
-            session.query(syfit.ExerciseLog)
-            .filter(syfit.ExerciseLog.routine_exercise_id == 1)
+            session.query(common.ExerciseLog)
+            .filter(common.ExerciseLog.routine_exercise_id == 1)
             .all()
         )
 
         assert len(logs) == len(query_logs)
 
     def test_get_exercise_log_by_id(self):
-        log = exercise_log_interface.get_exercise_log_by_id(1)
+        log = db.exercise_log.get_exercise_log_by_id(1)
 
-        session = exercise_log_interface.Session()
+        session = db.Session()
 
         query_log = (
-            session.query(syfit.ExerciseLog).filter(syfit.ExerciseLog.id == 1).first()
+            session.query(common.ExerciseLog).filter(common.ExerciseLog.id == 1).first()
         )
 
         assert log.id == query_log.id
@@ -773,15 +763,15 @@ class TestExerciseLog:
         assert log.time_duration == query_log.time_duration
 
     def test_get_exercise_log_by_set(self):
-        log = exercise_log_interface.get_exercise_log_by_set(1, 1)
+        log = db.exercise_log.get_exercise_log_by_set(1, 1)
 
-        session = exercise_interface.Session()
+        session = db.Session()
         query_log = (
-            session.query(syfit.ExerciseLog)
+            session.query(common.ExerciseLog)
             .filter(
                 and_(
-                    syfit.ExerciseLog.routine_exercise_id == 1,
-                    syfit.ExerciseLog.set_idx == 1,
+                    common.ExerciseLog.routine_exercise_id == 1,
+                    common.ExerciseLog.set_idx == 1,
                 )
             )
             .first()
@@ -795,14 +785,14 @@ class TestExerciseLog:
         assert log.time_duration == query_log.time_duration
 
     def test_edit_exercise_log(self):
-        exercise_log_interface.edit_exercise_log(1, num_reps=9)
+        db.exercise_log.edit_exercise_log(1, num_reps=9)
 
-        log = exercise_log_interface.get_exercise_log_by_id(1)
+        log = db.exercise_log.get_exercise_log_by_id(1)
 
         assert log.num_reps == 9
 
     def test_get_exercise_log_by_routine_exercise(self):
-        logs = exercise_log_interface.get_exercise_logs_by_routine_exercise(1)
+        logs = db.exercise_log.get_exercise_logs_by_routine_exercise(1)
         for l in logs:
             assert l.routine_exercise_id == 1
 
@@ -811,53 +801,53 @@ class TestDelete:
     __test__ = False
 
     def test_delete_user(self):
-        delete_user = user_interface.add_user(
+        delete_user = db.user.add_user(
             "delete", "me", "delete_me", datetime.today().date(), "metric"
         )
 
-        assert user_interface.get_user_by_username("delete_me") is not None
+        assert db.user.get_user_by_username("delete_me") is not None
 
-        user_interface.delete_user(delete_user.id)
+        db.user.delete_user(delete_user.id)
 
-        assert user_interface.get_user_by_username("delete_me") is None
+        assert db.user.get_user_by_username("delete_me") is None
 
     def test_delete_measurements(self):
-        measurement_interface.delete_measurement(7)
+        db.measurement.delete_measurement(7)
 
-        session = measurement_interface.Session()
+        session = db.Session()
 
         query_measurements = (
-            session.query(syfit.Measurement).filter(syfit.Measurement.id == 7).all()
+            session.query(common.Measurement).filter(common.Measurement.id == 7).all()
         )
 
         assert len(query_measurements) == 0
 
     def test_delete_all_measurements_by_user(self):
         user_id = 1
-        measurement_interface.delete_all_measurements_by_user(user_id)
+        db.measurement.delete_all_measurements_by_user(user_id)
 
-        session = measurement_interface.Session()
+        session = db.Session()
         measurements = (
-            session.query(syfit.Measurement)
-            .filter(syfit.Measurement.user_id == user_id)
+            session.query(common.Measurement)
+            .filter(common.Measurement.user_id == user_id)
             .all()
         )
 
         assert len(measurements) == 0
 
     def test_delete_routine(self):
-        routine_interface.delete_routine(2)
+        db.routine.delete_routine(2)
 
-        session = routine_interface.Session()
+        session = db.Session()
 
-        routine = session.query(syfit.Routine).filter(syfit.Routine.id == 2).all()
+        routine = session.query(common.Routine).filter(common.Routine.id == 2).all()
 
         assert len(routine) == 0
 
     def test_delete_day_by_id(self):
-        routine_day_interface.delete_day_by_id(4)
+        db.routine_day.delete_day_by_id(4)
 
-        days = routine_day_interface.get_days_by_routine_id(1)
+        days = db.routine_day.get_days_by_routine_id(1)
 
         assert len(days) == 4
 
@@ -865,79 +855,79 @@ class TestDelete:
             assert n == d.day_idx
 
     def test_delete_days_by_routine_id(self):
-        routine_day_interface.delete_days_by_routine_id(1)
+        db.routine_day.delete_days_by_routine_id(1)
 
-        session = routine_day_interface.Session()
+        session = db.Session()
 
         days = (
-            session.query(syfit.RoutineDay)
-            .filter(syfit.RoutineDay.routine_id == 1)
+            session.query(common.RoutineDay)
+            .filter(common.RoutineDay.routine_id == 1)
             .all()
         )
 
         assert len(days) == 0
 
-        routine = session.query(syfit.Routine).filter(syfit.Routine.id == 1).all()
+        routine = session.query(common.Routine).filter(common.Routine.id == 1).all()
 
         assert len(routine) == 0
 
     def test_delete_exercise(self):
-        exercise_id = exercise_interface.get_exercise_by_name("delete me").id
+        exercise_id = db.exercise.get_exercise_by_name("delete me").id
 
-        exercise_interface.delete_exercise(exercise_id)
+        db.exercise.delete_exercise(exercise_id)
 
-        session = exercise_interface.Session()
+        session = db.Session()
         exercise = (
-            session.query(syfit.Exercise)
-            .filter(syfit.Exercise.id == exercise_id)
+            session.query(common.Exercise)
+            .filter(common.Exercise.id == exercise_id)
             .first()
         )
 
         assert exercise is None
 
         exercise = (
-            session.query(syfit.Exercise)
-            .filter(syfit.Exercise.exercise_name == "delete me")
+            session.query(common.Exercise)
+            .filter(common.Exercise.exercise_name == "delete me")
             .first()
         )
 
         assert exercise is None
 
     def test_delete_exercise_by_id(self):
-        routine_exercise_interface.delete_exercise_by_id(3)
-        exercises = routine_exercise_interface.get_exercises_by_routine_day_id(1)
+        db.routine_exercise.delete_exercise_by_id(3)
+        exercises = db.routine_exercise.get_exercises_by_routine_day_id(1)
 
         assert len(exercises) == 3
         for n, d in enumerate(exercises):
             assert n == d.exercise_idx
 
     def test_delete_exercises_by_day_id(self):
-        routine_exercise_interface.delete_exercises_by_day_id(1)
+        db.routine_exercise.delete_exercises_by_day_id(1)
 
-        session = routine_day_interface.Session()
+        session = db.Session()
 
         exercises = (
-            session.query(syfit.RoutineExercise)
-            .filter(syfit.RoutineExercise.day_id == 1)
+            session.query(common.RoutineExercise)
+            .filter(common.RoutineExercise.day_id == 1)
             .all()
         )
 
         assert len(exercises) == 0
 
         routine_day = (
-            session.query(syfit.RoutineDay).filter(syfit.RoutineDay.id == 1).all()
+            session.query(common.RoutineDay).filter(common.RoutineDay.id == 1).all()
         )
 
         assert len(routine_day) == 0
 
     def test_delete_exercises_by_routine_exercise_id(self):
-        exercise_log_interface.delete_exercises_by_routine_exercise_id(1)
+        db.exercise_log.delete_exercises_by_routine_exercise_id(1)
 
-        session = exercise_log_interface.Session()
+        session = db.Session()
 
         logs = (
-            session.query(syfit.ExerciseLog)
-            .filter(syfit.ExerciseLog.routine_exercise_id == 1)
+            session.query(common.ExerciseLog)
+            .filter(common.ExerciseLog.routine_exercise_id == 1)
             .all()
         )
 
@@ -945,10 +935,10 @@ class TestDelete:
 
     def test_delete_exercise_log_by_id(self):
         num_logs_before = len(
-            exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1)
+            db.exercise_log.get_exercise_logs_by_routine_exercise_id(1)
         )
-        exercise_log_interface.delete_exercise_log_by_id(2)
-        logs = exercise_log_interface.get_exercise_logs_by_routine_exercise_id(1)
+        db.exercise_log.delete_exercise_log_by_id(2)
+        logs = db.exercise_log.get_exercise_logs_by_routine_exercise_id(1)
 
         assert len(logs) == num_logs_before - 1
 

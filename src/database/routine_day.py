@@ -1,5 +1,5 @@
 from src.database import routine
-from src.database.syfit import RoutineDay
+from src.database.common import RoutineDay
 
 
 class Interface(routine.Interface):

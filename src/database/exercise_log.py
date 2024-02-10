@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from sqlalchemy import and_
-from src.database.syfit import ExerciseLog, User, Routine, RoutineDay, RoutineExercise
+from src.database.common import ExerciseLog, User, Routine, RoutineDay, RoutineExercise
 from src.database import routine_exercise
 
 

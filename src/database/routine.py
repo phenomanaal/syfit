@@ -1,5 +1,5 @@
 from typing import List
-from src.database.syfit import DatabaseInterface, Routine
+from src.database.common import DatabaseInterface, Routine
 
 
 class Interface(DatabaseInterface):
