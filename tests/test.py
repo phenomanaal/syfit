@@ -121,27 +121,6 @@ class TestUser:
         assert user_ is not None
         assert user_.username == "testuser2023"
 
-    def test_change_username_by_username(self):
-        user_ = db.user.change_username_by_username("testuser2023", "newusername23")
-
-        session = db.Session()
-
-        test_user = (
-            session.query(common.User)
-            .filter(common.User.username == "newusername23")
-            .first()
-        )
-
-        user_ = session.query(common.User).filter(common.User.id == 1).first()
-
-        session.close()
-
-        assert test_user is None
-        assert user_ is not None
-        assert user_.username == "testuser2023"
-
-        # TODO: wait 24 hours from when testuser2023 was added and try again but this time assert that the username has changed
-
 
 class TestMeasurement:
     def test_add_measurement(self):

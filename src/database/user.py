@@ -91,35 +91,3 @@ class Interface(DatabaseInterface):
         session.close()
 
         return user
-
-    def change_username_by_username(self, username: str, new_username: str) -> User:
-        session = self.Session()
-
-        user = self.get_user_by_username(username)
-        hours_since_username_change = (
-            datetime.utcnow() - user.last_updated_username
-        ).total_seconds() / (60**2)
-
-        if hours_since_username_change > 24:
-            user = (
-                session.query(User)
-                .filter(User.username == username)
-                .update(
-                    {
-                        "username": new_username,
-                        "last_updated_username": datetime.utcnow(),
-                    }
-                )
-            )
-            session.commit()
-
-            user = self.get_user_by_username(username)
-
-        else:
-            user = {
-                "message": "username was updated less than 24 hours ago. Please wait to update username again."
-            }
-
-        session.close()
-
-        return user
