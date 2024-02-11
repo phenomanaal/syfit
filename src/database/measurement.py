@@ -154,7 +154,9 @@ class Interface(user.Interface):
                 update_values
             )
 
-    def change_measurement_system(self, user_id: int, change_values: bool) -> User:
+    def change_measurement_system(
+        self, user_id: int, change_values: bool = False
+    ) -> User:
         session = self.Session()
         user = self.get_user_by_id(user_id)
 
