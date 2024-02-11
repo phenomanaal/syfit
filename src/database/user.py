@@ -4,33 +4,21 @@ from sqlalchemy.exc import IntegrityError
 
 
 class Interface(DatabaseInterface):
-    def add_user(
-        self,
-        first_name: str,
-        last_name: str,
-        username: str,
-        DOB: datetime,
-        measurement_system: str,
-    ) -> User:
-        user = User(
-            first_name=first_name,
-            last_name=last_name,
-            username=username,
-            DOB=DOB,
-            last_updated_username=datetime.utcnow(),
-            measurement_system=measurement_system,
-        )
+    def add_user(self, user: User) -> User:
+        user.last_updated_username = datetime.utcnow()
+
         session = self.Session()
         session.add(user)
 
         try:
             session.commit()
-        except IntegrityError as e:
+        except Exception as e:
+            print(e)
             session.close()
             if "UNIQUE constraint failed" in e.args[0]:
                 return "duplicate username"
 
-        user = self.get_user_by_username(username)
+        user = self.get_user_by_username(user.username)
         session.close()
 
         return user

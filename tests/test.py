@@ -20,13 +20,16 @@ db = Syfit(conn_string, reset_db=True)
 
 class TestUser:
     def test_add_user(self):
-        add_user = db.user.add_user(
-            "Test",
-            "User",
-            "testuser2023",
-            datetime.strptime("1/25/2023", "%m/%d/%Y").date(),
-            "imperial",
+        user = common.User(
+            first_name="Test",
+            last_name="User",
+            username="testuser2023",
+            email="test@test.com",
+            password="asdfasdfasdf",
+            DOB=datetime.strptime("1/25/2023", "%m/%d/%Y").date(),
+            measurement_system="imperial",
         )
+        add_user = db.user.add_user(user)
 
         session = db.Session()
         get_user = (
@@ -47,9 +50,16 @@ class TestUser:
         session.close()
 
     def test_add_duplicate_username(self):
-        duplicate_user = db.user.add_user(
-            "NewTest", "User", "testuser2023", datetime.utcnow().date(), "metric"
+        duplicate_user = common.User(
+            first_name="NewTest",
+            last_name="User",
+            username="testuser2023",
+            email="test@test.com",
+            password="asdfasdfasdf",
+            DOB=datetime.utcnow().date(),
+            measurement_system="metric",
         )
+        duplicate_user = db.user.add_user(duplicate_user)
 
         session = db.Session()
 

@@ -12,11 +12,13 @@ from sqlalchemy import (
     TIMESTAMP,
     DATE,
     Enum,
+    CheckConstraint,
 )
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, validates
 import src.database.constraints as constraints
 
 Base = declarative_base()
+
 
 class User(Base):
     __tablename__ = "app_user"
@@ -25,11 +27,24 @@ class User(Base):
     first_name = Column(String(25), nullable=False)
     last_name = Column(String(25), nullable=False)
     username = Column(String(25), nullable=False, unique=True)
+    email = Column(String(200), nullable=False, unique=True)
+    password = Column(
+        String(200),
+        nullable=False,
+    )
     DOB = Column(DATE, nullable=False)
     last_updated_username = Column(TIMESTAMP)
     measurement_system = Column(
         String(10), Enum(constraints.MeasurementSystemCheck, create_constraint=True)
     )
+
+    __table_args__ = (CheckConstraint("LENGTH(password) > 8", name="pwd_gt_8"),)
+
+    @validates("password")
+    def validate_password(self, key, password) -> str:
+        if len(password) <= 8:
+            raise ValueError("password too short")
+        return password
 
 
 class Measurement(Base):
@@ -60,7 +75,9 @@ class RoutineDay(Base):
     routine_id = Column(Integer, ForeignKey("routine.id"), nullable=False)
     day_idx = Column(Integer)
     routine_day_name = Column(String(10))
-    day_of_week = Column(String(3), Enum(constraints.DayOfWeekCheck, create_constraint=True))
+    day_of_week = Column(
+        String(3), Enum(constraints.DayOfWeekCheck, create_constraint=True)
+    )
 
 
 class Exercise(Base):
@@ -69,12 +86,15 @@ class Exercise(Base):
     id = Column(Integer, Sequence("exercise_id_seq"), primary_key=True)
     exercise_name = Column(String(100), nullable=False, unique=True)
     reference_link = Column(String(255))
-    body_part = Column(String(50), Enum(constraints.BodyPartCheck, create_constraint=True))
+    body_part = Column(
+        String(50), Enum(constraints.BodyPartCheck, create_constraint=True)
+    )
     secondary_body_part = Column(
         String(50), Enum(constraints.BodyPartCheck, create_constraint=True)
     )
     rep_type = Column(String(4), Enum(constraints.RepTypeCheck, create_constraint=True))
     user_id = Column(Integer, ForeignKey("app_user.id"))
+
 
 class WarmUp(Base):
     __tablename__ = "warmup"
@@ -83,6 +103,7 @@ class WarmUp(Base):
     num_sets = Column(Integer)
     default_reps = Column(Integer)
     default_time = Column(Float)
+
 
 class WarmUpSet(Base):
     __tablename__ = "warmup_set"
@@ -93,6 +114,7 @@ class WarmUpSet(Base):
     num_reps = Column(Integer)
     time_duration = Column(Float)
     working_percentage = Column(Float)
+
 
 class RoutineExercise(Base):
     __tablename__ = "routine_exercise"
@@ -106,6 +128,7 @@ class RoutineExercise(Base):
     default_time = Column(Float)
     warmup_schema = Column(Integer, ForeignKey("warmup.id"))
 
+
 class ExerciseLog(Base):
     __tablename__ = "exercise_log"
 
@@ -117,6 +140,7 @@ class ExerciseLog(Base):
     set_idx = Column(Integer)
     num_reps = Column(Integer)
     time_duration = Column(Float)
+
 
 class DatabaseInterface:
     def __init__(self, connection_string: str, restart_db: bool = False):
