@@ -12,20 +12,23 @@ from src.database import (
     routine_exercise,
     exercise_log,
 )
+from passlib.context import CryptContext
 import src.config as config
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
 db = Syfit(conn_string, reset_db=True)
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class TestUser:
     def test_add_user(self):
+        pwd = password_context.hash("testpassword")
         user = common.User(
             first_name="Test",
             last_name="User",
             username="testuser2023",
             email="test@test.com",
-            password="asdfasdfasdf",
+            password=pwd,
             DOB=datetime.strptime("1/25/2023", "%m/%d/%Y").date(),
             measurement_system="imperial",
         )

@@ -1,13 +1,30 @@
+from typing import Annotated
 import json
-from datetime import datetime
-from fastapi import APIRouter, Depends, Request
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, Request, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from passlib.context import CryptContext
 from src.database.syfit import Syfit
 from src.database.common import User
 from src import config
+from src.api import auth
+
+
+class RequestUser:
+    id: int
+    first_name: str
+    last_name: str
+    username: str
+    email: str
+    password: str
+    DOB: str
+    last_updated_username: datetime
+    measurement_system: str
+
 
 router = APIRouter()
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def get_db():
@@ -44,6 +61,32 @@ async def signup(
     user = User(**user)
     user = db.user.add_user(user)
     return user.id
+
+
+@router.post("/users/token/")
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Syfit = Depends(get_db),
+) -> auth.Token:
+    user = auth.authenticate_user(form_data.username, form_data.password, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return auth.Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/users/me/")
+async def read_users_me(
+    current_user: RequestUser = Depends(auth.get_current_user),
+):
+    return current_user
 
 
 @router.put("/users/id/{user_id}/edit")
