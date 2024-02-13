@@ -9,11 +9,11 @@ from pydantic import BaseModel
 from src.database.syfit import Syfit
 from src import config
 
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = "92047c9a95a4f8da0bbd64b55769849bc69e1089865d387017c038b56bbb3449"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 
 def get_db():
@@ -31,11 +31,18 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
+    id: int | None = None
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def payload_to_token_data(payload_sub: str) -> TokenData:
+    payload_sub = payload_sub.split(',')
+    username = payload_sub[0].split(":")[1]
+    id = payload_sub[1].split(":")[1]
+    return TokenData(username=username, id=id)
 
 
 def verify_password(plain_password, hashed_password):
@@ -54,6 +61,21 @@ def authenticate_user(username: str, password: str, db: Syfit = Depends(get_db))
         return False
     return user
 
+def get_token_data(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(
+                token, config.config["API"]["API_KEY"],
+                algorithms=[config.config["API"]["ALGORITHM"]]
+            )
+        payload_sub: str = payload.get("sub")
+        token_data = payload_to_token_data(payload_sub)
+        if token_data.username is None or token_data.id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    return token_data
+
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -62,27 +84,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, config.config["API"]["API_KEY"],
+        algorithm=config.config["API"]["ALGORITHM"])
     return encoded_jwt
-
-
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], db: Syfit = Depends(get_db)
-):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-    user = db.user.get_user_by_username(username)
-    if user is None:
-        raise credentials_exception
-    return user

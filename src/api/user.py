@@ -1,8 +1,10 @@
-from typing import Annotated
+from typing import Annotated, Any
+from pydantic import BaseModel
 import json
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from src.database.syfit import Syfit
 from src.database.common import User
@@ -10,13 +12,13 @@ from src import config
 from src.api import auth
 
 
-class RequestUser:
+class RequestUser(BaseModel):
     id: int
     first_name: str
     last_name: str
     username: str
     email: str
-    password: str
+    password: str | None
     DOB: str
     last_updated_username: datetime
     measurement_system: str
@@ -37,17 +39,44 @@ def get_db():
 
 @router.get("/users/")
 async def read_users(db: Syfit = Depends(get_db)):
+    users = db.user.get_all_users()
+    users = [  ]
     return db.user.get_all_users()
 
 
 @router.get("/users/id/{user_id}")
-async def get_user_by_id(user_id: int, db: Syfit = Depends(get_db)):
-    return db.user.get_user_by_id(user_id)
+async def get_user_by_id(
+    user_id: int,
+    token: str = Depends(oauth2_scheme),
+    db: Syfit = Depends(get_db)):
 
+    token_data = auth.get_token_data(token)
+    user = db.user.get_user_by_id(user_id)
+
+    if user is None:
+        raise auth.credentials_exception
+    elif user.username != token_data.username:
+        raise auth.credentials_exception
+    
+    user = RequestUser(**user.to_model_dict())
+    return user
 
 @router.get("/users/username/{username}")
-async def get_user_by_username(username: str, db: Syfit = Depends(get_db)):
-    return db.user.get_user_by_username(username)
+async def get_user_by_id(
+    username: str,
+    token: str = Depends(oauth2_scheme),
+    db: Syfit = Depends(get_db)):
+
+    token_data = auth.get_token_data(token)
+    user = db.user.get_user_by_username(username)
+
+    if user is None:
+        raise auth.credentials_exception
+    elif user.username != token_data.username:
+        raise auth.credentials_exception
+    
+    user = RequestUser(**user.to_model_dict())
+    return user
 
 
 @router.post("/users/signup/")
@@ -75,18 +104,12 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=int(config.config["API"]["ACCESS_TOKEN_EXPIRE_MINUTES"]))
+    subject = f"username:{user.username},id:{user.id}"
     access_token = auth.create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": subject}, expires_delta=access_token_expires
     )
     return auth.Token(access_token=access_token, token_type="bearer")
-
-
-@router.get("/users/me/")
-async def read_users_me(
-    current_user: RequestUser = Depends(auth.get_current_user),
-):
-    return current_user
 
 
 @router.put("/users/id/{user_id}/edit")
