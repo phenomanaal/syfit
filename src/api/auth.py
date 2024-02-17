@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -38,8 +37,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 def payload_to_token_data(payload_sub: str) -> TokenData:
-    payload_sub = payload_sub.split(',')
+    payload_sub = payload_sub.split(",")
     username = payload_sub[0].split(":")[1]
     id = payload_sub[1].split(":")[1]
     return TokenData(username=username, id=id)
@@ -61,19 +61,21 @@ def authenticate_user(username: str, password: str, db: Syfit = Depends(get_db))
         return False
     return user
 
+
 def get_token_data(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(
-                token, config.config["API"]["API_KEY"],
-                algorithms=[config.config["API"]["ALGORITHM"]]
-            )
+            token,
+            config.config["API"]["API_KEY"],
+            algorithms=[config.config["API"]["ALGORITHM"]],
+        )
         payload_sub: str = payload.get("sub")
         token_data = payload_to_token_data(payload_sub)
         if token_data.username is None or token_data.id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     return token_data
 
 
@@ -85,6 +87,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode, config.config["API"]["API_KEY"],
-        algorithm=config.config["API"]["ALGORITHM"])
+        to_encode,
+        config.config["API"]["API_KEY"],
+        algorithm=config.config["API"]["ALGORITHM"],
+    )
     return encoded_jwt

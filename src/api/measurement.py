@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 import json
 from src.database.syfit import Syfit
-from src.database.common import User
 from src import config
-from sqlalchemy.orm import Session
 from datetime import datetime
 
 router = APIRouter()
@@ -69,5 +67,5 @@ async def delete_measurement(measurement_id: int, db: Syfit = Depends(get_db)):
 
 
 @router.delete("/measurement/user/{user_id}/delete")
-async def delete_measurement(user_id: int, db: Syfit = Depends(get_db)):
+async def delete_measurements_for_user(user_id: int, db: Syfit = Depends(get_db)):
     db.measurement.delete_all_measurements_by_user(user_id)

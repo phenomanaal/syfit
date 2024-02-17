@@ -4,7 +4,6 @@ from sqlalchemy import or_
 
 
 class Interface(DatabaseInterface):
-
     def add_exercise(
         self,
         exercise_name: str,

@@ -3,7 +3,6 @@ from src.database import routine_day
 
 
 class Interface(routine_day.Interface):
-
     def add_routine_exercise(
         self,
         day_id: int,

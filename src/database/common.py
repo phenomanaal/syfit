@@ -1,7 +1,6 @@
 import os
 from sqlalchemy import (
     create_engine,
-    text,
     Column,
     Integer,
     Float,
@@ -34,6 +33,7 @@ class User(Base):
     )
     DOB = Column(DATE, nullable=False)
     last_updated_username = Column(TIMESTAMP)
+    deletion_date = Column(TIMESTAMP)
     measurement_system = Column(
         String(10), Enum(constraints.MeasurementSystemCheck, create_constraint=True)
     )
@@ -45,12 +45,13 @@ class User(Base):
         if len(password) <= 8:
             raise ValueError("password too short")
         return password
-    
+
     def to_model_dict(self):
         model_dict = self.__dict__
         model_dict["DOB"] = model_dict["DOB"].strftime("%Y-%m-%d")
         model_dict["password"] = None
         return model_dict
+
 
 class Measurement(Base):
     __tablename__ = "measurement"

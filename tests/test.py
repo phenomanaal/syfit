@@ -4,13 +4,6 @@ from sqlalchemy import and_
 from src.database.syfit import Syfit
 from src.database import (
     common,
-    user,
-    measurement,
-    routine,
-    routine_day,
-    exercise,
-    routine_exercise,
-    exercise_log,
 )
 from passlib.context import CryptContext
 import src.config as config
@@ -133,6 +126,19 @@ class TestUser:
         assert test_user is None
         assert user_ is not None
         assert user_.username == "testuser2023"
+
+    def test_set_user_for_deletion(self):
+        ## TODO: adjust methods so that all associated data is also deleted
+        user_id = 1
+        db.user.set_user_for_deletion(user_id)
+
+        session = db.Session()
+        test_user = session.query(common.User).filter(common.User.id == user_id).first()
+        session.close()
+
+        assert test_user.deletion_date.date() == (
+            datetime.utcnow().date() + timedelta(days=45)
+        )
 
 
 class TestMeasurement:
@@ -634,7 +640,6 @@ class TestExercise:
 
 
 class TestRoutineExercise:
-
     def test_add_routine_exercise(self):
         e = db.routine_exercise.add_routine_exercise(day_id=1, exercise_id=1)
 
@@ -785,8 +790,8 @@ class TestExerciseLog:
 
     def test_get_exercise_log_by_routine_exercise(self):
         logs = db.exercise_log.get_exercise_logs_by_routine_exercise(1)
-        for l in logs:
-            assert l.routine_exercise_id == 1
+        for log in logs:
+            assert log.routine_exercise_id == 1
 
 
 class TestDelete:
@@ -934,5 +939,5 @@ class TestDelete:
 
         assert len(logs) == num_logs_before - 1
 
-        for n, l in enumerate(logs):
-            assert l.set_idx == n
+        for n, log in enumerate(logs):
+            assert log.set_idx == n

@@ -1,6 +1,5 @@
 from src.database.common import DatabaseInterface, User
-from datetime import datetime
-from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta
 
 
 class Interface(DatabaseInterface):
@@ -48,6 +47,15 @@ class Interface(DatabaseInterface):
             session.delete(user)
             session.commit()
         session.close()
+
+    def set_user_for_deletion(self, user_id: int) -> User:
+        session = self.Session()
+        session.query(User).filter(User.id == user_id).update(
+            {"deletion_date": datetime.utcnow() + timedelta(days=45)}
+        )
+        session.commit()
+        session.close()
+        return self.get_user_by_id(user_id)
 
     def change_username_by_id(self, user_id: int, new_username: str) -> User:
         session = self.Session()
