@@ -1,10 +1,14 @@
 ## reset test database
 import requests
 import json
+from fastapi.testclient import TestClient
 from src.database.syfit import Syfit
 from src.database import common
 import src.config as config
 from src.api.auth import get_token_data
+from src.api.main import app
+
+client = TestClient(app)
 
 conn_string = config.config.get("DATABASE", "CONN_STRING")
 db = Syfit(conn_string, reset_db=True)
@@ -21,8 +25,8 @@ class TestUser:
             "DOB": "1/1/2001",
             "measurement_system": "imperial",
         }
-        post_admin = requests.post(
-            "http://127.0.0.1:8000/users/signup",
+        post_admin = client.post(
+            "/users/signup",
             data=data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -38,6 +42,7 @@ class TestUser:
         )
         session.close()
 
+        assert post_admin.status_code == 200
         assert admin is not None
         assert token.id == admin.id
 
@@ -51,8 +56,8 @@ class TestUser:
             "DOB": "1/1/2001",
             "measurement_system": "imperial",
         }
-        post_user = requests.post(
-            "http://127.0.0.1:8000/users/signup",
+        post_user = client.post(
+            "/users/signup",
             data=data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -81,8 +86,8 @@ class TestUser:
             "DOB": "1/1/2001",
             "measurement_system": "imperial",
         }
-        post_user = requests.post(
-            "http://127.0.0.1:8000/users/signup",
+        post_user = client.post(
+            "/users/signup",
             data=data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
