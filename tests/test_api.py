@@ -23,8 +23,8 @@ class TestUser:
         }
         post_admin = requests.post(
             "http://127.0.0.1:8000/users/signup",
-            json=data,
-            headers={"Content-Type": "application/json"},
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         token = get_token_data(
             json.loads(post_admin.content.decode()).get("access_token")
@@ -53,8 +53,8 @@ class TestUser:
         }
         post_user = requests.post(
             "http://127.0.0.1:8000/users/signup",
-            json=data,
-            headers={"Content-Type": "application/json"},
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         token = get_token_data(
             json.loads(post_user.content.decode()).get("access_token")
@@ -83,8 +83,8 @@ class TestUser:
         }
         post_user = requests.post(
             "http://127.0.0.1:8000/users/signup",
-            json=data,
-            headers={"Content-Type": "application/json"},
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         post_user = json.loads(post_user.content.decode())
         assert (

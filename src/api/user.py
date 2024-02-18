@@ -2,7 +2,7 @@ from typing import Annotated
 from pydantic import BaseModel
 import json
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Request, HTTPException, status
+from fastapi import APIRouter, Depends, Request, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from passlib.context import CryptContext
 from src.database.syfit import Syfit
@@ -80,14 +80,27 @@ async def get_user_by_username(
 
 @router.post("/users/signup/")
 async def signup(
-    request: Request,
+    first_name: Annotated[str, Form()],
+    last_name: Annotated[str, Form()],
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    DOB: Annotated[str, Form()],
+    measurement_system: Annotated[str, Form()],
     db: Syfit = Depends(get_db),
 ):
-    user = json.loads((await request.body()).decode())
-    str_password = user["password"]
-    user["password"] = password_context.hash(user["password"])
-    user["DOB"] = datetime.strptime(user["DOB"], "%m/%d/%Y").date()
-    user = User(**user)
+    user = User(
+        first_name=first_name,
+        last_name=last_name,
+        username=username,
+        password=password,
+        email=email,
+        DOB=DOB,
+        measurement_system=measurement_system,
+    )
+    str_password = user.password
+    user.password = password_context.hash(user.password)
+    user.DOB = datetime.strptime(user.DOB, "%m/%d/%Y").date()
     user = db.user.add_user(user)
     if isinstance(user, dict):
         return user
