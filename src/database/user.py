@@ -1,5 +1,6 @@
 from src.database.common import DatabaseInterface, User
 from datetime import datetime, timedelta
+from sqlalchemy.exc import IntegrityError
 
 
 class Interface(DatabaseInterface):
@@ -11,8 +12,8 @@ class Interface(DatabaseInterface):
 
         try:
             session.commit()
-        except Exception as e:
-            print(e)
+        except IntegrityError as e:
+            session.rollback()
             session.close()
             if "UNIQUE constraint failed" in e.args[0]:
                 return {"message": f"username {user.username} already exists!"}

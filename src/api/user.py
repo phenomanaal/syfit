@@ -84,13 +84,15 @@ async def signup(
     db: Syfit = Depends(get_db),
 ):
     user = json.loads((await request.body()).decode())
+    str_password = user["password"]
     user["password"] = password_context.hash(user["password"])
     user["DOB"] = datetime.strptime(user["DOB"], "%m/%d/%Y").date()
     user = User(**user)
     user = db.user.add_user(user)
-    if isinstance(user, str):
+    if isinstance(user, dict):
         return user
-    return user.id
+    data = OAuth2PasswordRequestForm(username=user.username, password=str_password)
+    return await login_for_access_token(form_data=data, db=db)
 
 
 @router.post("/users/token/")
