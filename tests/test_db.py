@@ -2,9 +2,7 @@ from datetime import datetime, timedelta
 import math
 from sqlalchemy import and_
 from src.database.syfit import Syfit
-from src.database import (
-    common,
-)
+from src.database import common
 from passlib.context import CryptContext
 import src.config as config
 
@@ -129,6 +127,7 @@ class TestUser:
 
     def test_set_user_for_deletion(self):
         ## TODO: adjust methods so that all associated data is also deleted
+        ## TODO: create test that adjust the date to 1 minute from now and then test to see if user and all user data is deleted
         user_id = 1
         db.user.set_user_for_deletion(user_id)
 
@@ -330,7 +329,7 @@ class TestRoutine:
         assert routine.user_id == user_id
         assert routine.routine_name == routine_name
         assert routine.num_days == num_days
-        assert routine.is_current == True
+        assert routine.is_current is True
 
     def test_get_all_user_routines(self):
         routine = db.routine.get_all_user_routines(1)
@@ -361,13 +360,13 @@ class TestRoutine:
         assert routine.num_days == 5
 
     def test_make_routine_not_current(self):
-        assert db.routine.get_routine_by_id(1).is_current == True
+        assert db.routine.get_routine_by_id(1).is_current is True
 
         db.routine.make_routine_not_current(1)
 
         routine = db.routine.get_routine_by_id(1)
 
-        assert routine.is_current == False
+        assert routine.is_current is False
 
     def test_make_routine_current(self):
         db.routine.add_routine(1, "NEW ROUTINE", 3)
@@ -377,8 +376,8 @@ class TestRoutine:
         routine = db.routine.get_routine_by_id(1)
         new_routine = db.routine.get_routine_by_id(2)
 
-        assert routine.is_current == True
-        assert new_routine.is_current == False
+        assert routine.is_current is True
+        assert new_routine.is_current is False
 
 
 class TestRoutineDay:

@@ -39,9 +39,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def payload_to_token_data(payload_sub: str) -> TokenData:
-    payload_sub = payload_sub.split(",")
-    username = payload_sub[0].split(":")[1]
-    id = payload_sub[1].split(":")[1]
+    subject = payload_sub.split(",")
+    username = subject[0].split(":")[1]
+    id = int(subject[1].split(":")[1])
     return TokenData(username=username, id=id)
 
 

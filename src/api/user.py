@@ -37,8 +37,12 @@ def get_db():
 
 
 @router.get("/users/")
-async def read_users(db: Syfit = Depends(get_db)):
-    ## TODO: admin authorization to do this
+async def read_users(token: str = Depends(oauth2_scheme), db: Syfit = Depends(get_db)):
+    token_data = auth.get_token_data(token)
+    if token_data.username != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+        )
     return db.user.get_all_users()
 
 
@@ -54,14 +58,14 @@ async def get_user_by_id(
     elif user.username != token_data.username:
         raise auth.credentials_exception
 
-    user = RequestUser(**user.to_model_dict())
-    return user
+    response_user = RequestUser(**user.to_model_dict())
+    return response_user
 
 
 @router.get("/users/username/{username}")
 async def get_user_by_username(
     username: str, token: str = Depends(oauth2_scheme), db: Syfit = Depends(get_db)
-):
+) -> RequestUser | None:
     token_data = auth.get_token_data(token)
     user = db.user.get_user_by_username(username)
 
@@ -70,20 +74,22 @@ async def get_user_by_username(
     elif user.username != token_data.username:
         raise auth.credentials_exception
 
-    user = RequestUser(**user.to_model_dict())
-    return user
+    response_user = RequestUser(**user.to_model_dict())
+    return response_user
 
 
 @router.post("/users/signup/")
 async def signup(
-    user: Request,
+    request: Request,
     db: Syfit = Depends(get_db),
 ):
-    user = json.loads((await user.body()).decode())
+    user = json.loads((await request.body()).decode())
     user["password"] = password_context.hash(user["password"])
     user["DOB"] = datetime.strptime(user["DOB"], "%m/%d/%Y").date()
     user = User(**user)
     user = db.user.add_user(user)
+    if isinstance(user, str):
+        return user
     return user.id
 
 
@@ -134,4 +140,3 @@ async def delete_username(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
         )
-    db.user.edit_user

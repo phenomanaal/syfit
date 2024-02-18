@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 
 class Interface(DatabaseInterface):
-    def add_user(self, user: User) -> User:
+    def add_user(self, user: User | None) -> User | dict[str, str]:
         user.last_updated_username = datetime.utcnow()
 
         session = self.Session()
@@ -15,7 +15,7 @@ class Interface(DatabaseInterface):
             print(e)
             session.close()
             if "UNIQUE constraint failed" in e.args[0]:
-                return "duplicate username"
+                return {"message": f"username {user.username} already exists!"}
 
         user = self.get_user_by_username(user.username)
         session.close()
@@ -28,13 +28,13 @@ class Interface(DatabaseInterface):
         session.close()
         return users
 
-    def get_user_by_id(self, user_id: int) -> User:
+    def get_user_by_id(self, user_id: int) -> User | None:
         session = self.Session()
         user = session.query(User).filter(User.id == user_id).first()
         session.close()
         return user
 
-    def get_user_by_username(self, username: str) -> User:
+    def get_user_by_username(self, username: str) -> User | None:
         session = self.Session()
         user = session.query(User).filter(User.username == username).first()
         session.close()
