@@ -1,6 +1,7 @@
 ## reset test database
 import requests
 import json
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from src.database.syfit import Syfit
 from src.database import common
@@ -100,8 +101,9 @@ class TestUser:
                 "api_key": config.config["API"]["API_KEY"],
             },
         )
-        post_user = json.loads(post_user.content.decode())
+        assert post_user.status_code == 409
+        error_msg = json.loads(post_user.text)
         assert (
-            post_user.get("message")
+            error_msg.get("detail")
             == f"username {data.get('username')} already exists!"
         )

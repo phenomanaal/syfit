@@ -103,7 +103,9 @@ async def signup(
     user.DOB = datetime.strptime(user.DOB, "%m/%d/%Y").date()
     user = db.user.add_user(user)
     if isinstance(user, dict):
-        return user
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=user.get("message")
+        )
     data = OAuth2PasswordRequestForm(username=user.username, password=str_password)
     return await login_for_access_token(form_data=data, db=db)
 
