@@ -1,12 +1,25 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import OAuth2PasswordBearer, api_key
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from src.database.syfit import Syfit
 from src import config
+
+api_key_header = api_key.APIKeyHeader(name="api_key")
+admin_key_header = api_key.APIKeyHeader(name="admin_key")
+
+
+async def validate_api_key(key: str = Security(api_key_header)):
+    if key == config.config["API"]["API_KEY"]:
+        return api_key_header
+    elif key == config.config["API"]["ADMIN_KEY"]:
+        return admin_key_header
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

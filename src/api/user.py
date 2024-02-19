@@ -23,7 +23,7 @@ class RequestUser(BaseModel):
     measurement_system: str
 
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(auth.validate_api_key)])
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 

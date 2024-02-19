@@ -28,7 +28,10 @@ class TestUser:
         post_admin = client.post(
             "/users/signup",
             data=data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "api_key": config.config["API"]["API_KEY"],
+            },
         )
         token = get_token_data(
             json.loads(post_admin.content.decode()).get("access_token")
@@ -59,7 +62,10 @@ class TestUser:
         post_user = client.post(
             "/users/signup",
             data=data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "api_key": config.config["API"]["API_KEY"],
+            },
         )
         token = get_token_data(
             json.loads(post_user.content.decode()).get("access_token")
@@ -89,7 +95,10 @@ class TestUser:
         post_user = client.post(
             "/users/signup",
             data=data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "api_key": config.config["API"]["API_KEY"],
+            },
         )
         post_user = json.loads(post_user.content.decode())
         assert (
