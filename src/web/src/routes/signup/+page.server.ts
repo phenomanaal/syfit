@@ -1,6 +1,7 @@
 import type { Actions } from "./$types";
 export const actions = {
     signup: async ({ request }) => { 
+        // TODO: get this working! why is it not reading FormData object?
         const data: FormData = await request.formData();
         fetch(
             "http://127.0.0.1:8000/users/signup/",
