@@ -1,14 +1,3 @@
-.DS_Store
-node_modules
-/build
-/.svelte-kit
-/package
-.env
-.env.*
-!.env.example
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-
 *.iml
 .gradle
 /local.properties
@@ -24,10 +13,3 @@ vite.config.ts.timestamp-*
 .externalNativeBuild
 .cxx
 local.properties
-
-/build
-
-# Default ignored files
-/shelf/
-/workspace.xml
-
