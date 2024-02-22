@@ -6,3 +6,5 @@
 	<br />
 	<button formaction="?/login"> login </button>
 </form>
+<p>Don't have an account?</p>
+<a href="/signup">signup</a>

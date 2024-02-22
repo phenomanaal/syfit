@@ -4,6 +4,7 @@ import { redirect } from "@sveltejs/kit";
 
 export const actions = {
     signup: async ({ request, cookies }) => {
+        console.log("TOP")
         const data: FormData = await request.formData();
         if (!data.has("measurement_system")) { 
             data.append("measurement_system", "imperial")
@@ -23,11 +24,13 @@ export const actions = {
         });
         const response_body = JSON.parse(await response.text())
         if (response.status == 409) {
+            console.log("here")
             return {
                 status: response.status,
                 body: JSON.stringify({ message: `Username ${data.get("username")} not available!` })
             }
-        } else if (response.status == 200) { 
+        } else if (response.status == 200) {
+            console.log("or here")
             cookies.set('token', response_body.access_token, {
                 path: '/',
                 httpOnly: true,
