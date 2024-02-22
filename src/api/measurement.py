@@ -1,18 +1,10 @@
 from fastapi import APIRouter, Depends, Request
 import json
-from src.database.syfit import Syfit
+from src.database.syfit import Syfit, get_db
 from src import config
 from datetime import datetime
 
 router = APIRouter()
-
-
-def get_db():
-    db = Syfit(config.config["DATABASE"]["CONN_STRING"])
-    try:
-        yield db
-    finally:
-        db.Session().close()
 
 
 @router.get("/measurement/user/{user_id}")

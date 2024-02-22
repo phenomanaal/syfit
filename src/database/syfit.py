@@ -8,6 +8,7 @@ from src.database import (
     exercise_log,
     exercise,
 )
+from src import config
 
 
 class Syfit(common.DatabaseInterface):
@@ -20,3 +21,11 @@ class Syfit(common.DatabaseInterface):
         self.routine_exercise = routine_exercise.Interface(conn_string)
         self.exercise_log = exercise_log.Interface(conn_string)
         self.exercise = exercise.Interface(conn_string)
+
+
+def get_db():
+    db = Syfit(config.config["DATABASE"]["CONN_STRING"])
+    try:
+        yield db
+    finally:
+        db.Session().close()

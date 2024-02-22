@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from passlib.context import CryptContext
-from src.database.syfit import Syfit
+from src.database.syfit import get_db, Syfit
 from src.database.common import User
 from src import config
 from src.api import auth
@@ -26,14 +26,6 @@ class RequestUser(BaseModel):
 router = APIRouter(dependencies=[Depends(auth.validate_api_key)])
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-def get_db():
-    db = Syfit(config.config["DATABASE"]["CONN_STRING"])
-    try:
-        yield db
-    finally:
-        db.Session().close()
 
 
 @router.get("/users/")
