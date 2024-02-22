@@ -46,6 +46,20 @@ async def read_users(token: str = Depends(oauth2_scheme), db: Syfit = Depends(ge
     return db.user.get_all_users()
 
 
+@router.get("/users/me/")
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Syfit = Depends(get_db)
+):
+    token_data = auth.get_token_data(token)
+    user = db.user.get_user_by_id(token_data.id)
+
+    if user is None:
+        raise auth.credentials_exception
+
+    response_user = RequestUser(**user.to_model_dict())
+    return response_user
+
+
 @router.get("/users/id/{user_id}")
 async def get_user_by_id(
     user_id: int, token: str = Depends(oauth2_scheme), db: Syfit = Depends(get_db)
