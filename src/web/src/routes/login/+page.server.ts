@@ -3,7 +3,7 @@ import { env } from '$env/dynamic/private';
 import { redirect } from "@sveltejs/kit";
 
 export const actions = {
-    login: async ({ request, cookies }) => {
+    signin: async ({ request, cookies }) => {
         const data: FormData = await request.formData();
 
         const response = await fetch(

@@ -15,4 +15,4 @@
 	<button formaction="?/signup"> signup </button>
 </form>
 <p>Already have an accout?</p>
-<a href="/login">Login</a>
+<a href="/signin">signin</a>

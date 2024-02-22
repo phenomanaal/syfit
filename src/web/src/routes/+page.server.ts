@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 
 export const actions = {
-    logout: async ({ request, cookies }) => {
+    signout: async ({ request, cookies }) => {
         cookies.delete("token", {path: "/"})
         throw redirect(302, "/")
     }

@@ -10,7 +10,7 @@
 </h1>
 
 {#if data.detail == 'Could not validate credentials'}
-	<a href="/login">Login</a> or <a href="/signup">signup</a>
+	<a href="/signin">signin</a> or <a href="/signup">signup</a>
 {:else}
-	<form method="POST" action="?/logout"><button formaction="?/logout"> logout </button></form>
+	<form method="POST" action="?/signout"><button formaction="?/signout"> signout </button></form>
 {/if}
