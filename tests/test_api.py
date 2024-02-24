@@ -8,6 +8,7 @@ from src.database import common
 import src.config as config
 from src.api.auth import get_token_data
 from src.api.main import app
+import uvicorn
 
 client = TestClient(app)
 
