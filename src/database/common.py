@@ -159,7 +159,8 @@ class DatabaseInterface:
         Base.metadata.create_all(self.engine)
 
     def delete_db(self):
-        os.remove(self.engine.url.database)
+        if os.path.isfile(self.engine.url.database):
+            os.remove(self.engine.url.database)
 
     def restart_db(self):
         self.delete_db()

@@ -24,7 +24,6 @@ export const actions = {
         });
         const response_body = JSON.parse(await response.text())
         if (response.status == 409) {
-            console.log("here")
             return {
                 status: response.status,
                 body: JSON.stringify({ message: `Username ${data.get("username")} not available!` })
