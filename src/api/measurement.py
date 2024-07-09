@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 import json
 from src.database.syfit import Syfit, get_db
-from src import config
 from datetime import datetime
 
 router = APIRouter()

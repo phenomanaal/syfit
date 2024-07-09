@@ -1,14 +1,11 @@
 ## reset test database
-import requests
 import json
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from src.database.syfit import Syfit
 from src.database import common
 import src.config as config
 from src.api.auth import get_token_data
 from src.api.main import app
-import uvicorn
 
 client = TestClient(app)
 
