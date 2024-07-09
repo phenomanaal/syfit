@@ -16,19 +16,19 @@ Database - SQLite
 
 Step 1: design database structure based on functionality, entities, and features - [DONE](https://lucid.app/lucidchart/c0aad5fa-5bb7-4591-a7f3-d3564a27d0d6/edit?viewport_loc=-1636%2C-986%2C1867%2C1168%2C0_0&invitationId=inv_4a4db137-d1b7-4c66-b20b-95551b0d117f)
 
-Step 1.5: create base schema script and run - [DONE]
+Step 1.5: create base schema script and run - DONE
 
-Step 2: what types of queries? - [DONE]
+Step 2: what types of queries? - DONE
 
-Step 3: build database interface (Python, sqlalchemy) [DONE]
+Step 3: build database interface (Python, sqlalchemy) DONE
 
-Step 4: sample data in database [DONE]
+Step 4: sample data in database DONE
 
-Step 4.5: testing [ONGOING]
+Step 4.5: testing ONGOING
 
-Step 5: API to interact with database interface (FastAPI} [DONE/ONGOING]
+Step 5: API to interact with database interface (FastAPI} DONE/ONGOING
 
-Step 5.5: testing [ONGOING]
+Step 5.5: testing ONGOING
 
 Step 6: Browser Front End (Vanilla JavaScript)
 
