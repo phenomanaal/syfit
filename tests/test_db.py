@@ -63,7 +63,8 @@ class TestUser:
             .all()
         )
 
-        assert isinstance(duplicate_user, str)
+        assert isinstance(duplicate_user, dict)
+        assert isinstance(duplicate_user.get("message"), str)
         assert len(get_user) == 1
         assert get_user[0].username == "testuser2023"
         assert get_user[0].first_name != "NewTest"
