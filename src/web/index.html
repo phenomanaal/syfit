@@ -9,9 +9,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body onload="loadPage()">
     <script src="script.js"></script>
     <h1>welcome to syfit!</h1>
+    <h3>Sign In</h3>
+    <form id="signin">
+        <input id="signin-input" /> <button type="button" id="id-type-button" onclick="changeSignInType()" required>use
+            <span id="signin-text"></span> instead</button>
+        <br />
+        <input type="password" id="signin-password" placeholder="password" />
+        <br />
+        <input type="submit" value="sign in" />
+    </form>
 
 </body>
 

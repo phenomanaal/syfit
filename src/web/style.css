@@ -1,3 +1,10 @@
 body {
-    color: #F06083;
+    background-color: #A06083;
+    color: bisque;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#signin input,
+#signin button {
+    font-family: 'Courier New', Courier, monospace;
 }

@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import sessionmaker, declarative_base, validates
 import src.database.constraints as constraints
+from src.database.utils import CountryCode
 
 Base = declarative_base()
 
@@ -26,6 +27,8 @@ class User(Base):
     first_name = Column(String(25), nullable=False)
     last_name = Column(String(25), nullable=False)
     username = Column(String(25), nullable=False, unique=True)
+    tel_country = Column(String(2))
+    tel = Column(String(15), unique=True)
     email = Column(String(200), nullable=False, unique=True)
     password = Column(
         String(200),
@@ -41,16 +44,49 @@ class User(Base):
     __table_args__ = (CheckConstraint("LENGTH(password) > 8", name="pwd_gt_8"),)
 
     @validates("password")
-    def validate_password(self, key, password) -> str:
+    def validate_password(self, _, password) -> str:
         if len(password) <= 8:
             raise ValueError("password too short")
         return password
+
+    @validates("tel")
+    def validate_tel(self, _, tel) -> str:
+        if not tel.isdigit():
+            raise ValueError("phone number must be all numeric!")
+        return tel
 
     def to_model_dict(self):
         model_dict = self.__dict__
         model_dict["DOB"] = model_dict["DOB"].strftime("%Y-%m-%d")
         model_dict["password"] = None
         return model_dict
+
+
+class TelCountryCode(Base):
+    __tablename__ = "tel_country_code"
+
+    id = Column(Integer, Sequence("tel_country_code_id_seq"), primary_key=True)
+    name = Column(String(CountryCode.get_max_country_name_length()))
+    short_name = Column(String(2))
+    tele_code = Column(String(CountryCode.get_max_country_code_length()))
+
+    @validates("name")
+    def validate_name(self, _, name: str) -> str:
+        if name not in CountryCode.get_all_country_names():
+            raise ValueError("invalid country name")
+        return name
+
+    @validates("tele_code")
+    def validate_name(self, _, tele_code: str) -> str:
+        if tele_code not in CountryCode.get_all_country_codes():
+            raise ValueError("invalid country code")
+        return tele_code
+
+    @validates("short_name")
+    def validate_name(self, _, short_name) -> str:
+        if short_name not in CountryCode.get_all_country_short_names():
+            raise ValueError("invalid country short name")
+        return short_name
 
 
 class Measurement(Base):
@@ -165,6 +201,9 @@ class DatabaseInterface:
     def restart_db(self):
         self.delete_db()
         self.create_tables()
+
+    def initialize_country_code_table(self):
+        pass
 
 
 # Example usage:
