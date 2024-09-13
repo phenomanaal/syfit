@@ -3,7 +3,7 @@ import json
 
 
 class CountryCode:
-    def __init__(self, json_filepath: str | None):
+    def __init__(self, json_filepath: str | None = None):
 
         if json_filepath is None:
             json_filepath = pathlib.Path(__file__).resolve().parent
