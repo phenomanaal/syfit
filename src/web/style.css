@@ -4,7 +4,6 @@ body {
     font-family: 'Courier New', Courier, monospace;
 }
 
-#signin input,
-#signin button {
+.main-button {
     font-family: 'Courier New', Courier, monospace;
 }

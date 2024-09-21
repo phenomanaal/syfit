@@ -21,3 +21,18 @@ function changeSignInType() {
 
 
 }
+
+function changeSignInOrUp() {
+    let signInHeader = document.getElementById("signin-header")
+    let signInFooter = document.getElementById("signin-footer")
+    let signInSwitch = document.getElementById("signin-switch")
+    let temp = signInHeader.innerHTML
+    signInHeader.innerHTML = signInSwitch.innerHTML
+    signInSwitch.innerHTML = temp
+
+    if (signInSwitch.innerHTML == "sign up") {
+        signInFooter.innerHTML = "don't have an account?"
+    } else if (signInSwitch.innerHTML == "sign in") {
+        signInFooter.innerHTML = "already have an account?"
+    }
+}

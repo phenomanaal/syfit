@@ -12,15 +12,19 @@
 <body onload="loadPage()">
     <script src="script.js"></script>
     <h1>welcome to syfit!</h1>
-    <h3>Sign In</h3>
+    <h2 id="signin-header">sign in</h2>
     <form id="signin">
-        <input id="signin-input" /> <button type="button" id="id-type-button" onclick="changeSignInType()" required>use
+        <input id="signin-input" /> <button type="button" id="id-type-button" class="main-button"
+            onclick="changeSignInType()" required>use
             <span id="signin-text"></span> instead</button>
         <br />
         <input type="password" id="signin-password" placeholder="password" />
         <br />
-        <input type="submit" value="sign in" />
+        <input type="submit" class="main-button" value="sign in" />
     </form>
+
+    <h5><span id="signin-footer">don't have an account?</span> <button id="signin-switch" class="main-button"
+            onclick="changeSignInOrUp()">sign up</button></h5>
 
 </body>
 
