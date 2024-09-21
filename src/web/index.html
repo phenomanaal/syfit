@@ -14,7 +14,10 @@
             <!-- sign in Form -->
             <form id="sign-in-form" class="form active">
                 <h2>sign in</h2>
-                <input type="email" placeholder="email" required>
+                <div class="toggle-input">
+                    <input type="text" id="signin-identifier" placeholder="email" required>
+                    <button type="button" id="toggle-signin">use username</button>
+                </div>
                 <input type="password" placeholder="password" required>
                 <button type="submit">sign in</button>
                 <p class="toggle-text">don't have an account? <a href="#" id="show-sign-up">sign up</a></p>

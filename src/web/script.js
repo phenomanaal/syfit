@@ -542,3 +542,22 @@ function populateCountryCodes() {
 
 // Call the function to populate country codes when the page loads
 document.addEventListener("DOMContentLoaded", populateCountryCodes);
+
+let isEmail = true; // Track if the current input is for email
+
+document.getElementById("toggle-signin").addEventListener("click", function () {
+    const input = document.getElementById("signin-identifier");
+    if (isEmail) {
+        input.placeholder = "username"; // Change placeholder to username
+        input.value = ""; // Clear input
+        input.type = "text"; // Change input type to text
+        isEmail = false; // Switch to username mode
+        this.textContent = "use email"; // Update button text
+    } else {
+        input.placeholder = "email"; // Change placeholder to email
+        input.value = ""; // Clear input
+        input.type = "email"; // Change input type to email
+        isEmail = true; // Switch to email mode
+        this.textContent = "use username"; // Update button text
+    }
+});
