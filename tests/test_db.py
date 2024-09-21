@@ -1,20 +1,16 @@
 from datetime import datetime, timedelta
 import math
 from sqlalchemy import and_
-from src.database.syfit import Syfit
 from src.database import common
+from src.database.common import User
 from passlib.context import CryptContext
-import src.config as config
 
-conn_string = config.config.get("DATABASE", "CONN_STRING")
-db = Syfit(conn_string, reset_db=True)
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 class TestUser:
-    def test_add_user(self):
+    def test_add_user(self, db):
         pwd = password_context.hash("testpassword")
-        user = common.User(
+        user = User(
             first_name="Test",
             last_name="User",
             username="testuser2023",
@@ -23,12 +19,14 @@ class TestUser:
             DOB=datetime.strptime("1/25/2023", "%m/%d/%Y").date(),
             measurement_system="imperial",
         )
+
         add_user = db.user.add_user(user)
 
         session = db.Session()
+
         get_user = (
-            session.query(common.User)
-            .filter(common.User.username == "testuser2023")
+            session.query(User)
+            .filter(User.username == add_user.username)
             .first()
         )
 
@@ -40,11 +38,10 @@ class TestUser:
         assert add_user.last_updated_username == get_user.last_updated_username
         assert add_user.measurement_system == get_user.measurement_system
 
-        session.commit()
-        session.close()
+        session.close()        
 
-    def test_add_duplicate_username(self):
-        duplicate_user = common.User(
+    def test_add_duplicate_username(self, db):
+        duplicate_user = User(
             first_name="NewTest",
             last_name="User",
             username="testuser2023",
@@ -58,8 +55,8 @@ class TestUser:
         session = db.Session()
 
         get_user = (
-            session.query(common.User)
-            .filter(common.User.username == "testuser2023")
+            session.query(User)
+            .filter(User.username == "testuser2023")
             .all()
         )
 
@@ -72,7 +69,7 @@ class TestUser:
         session.commit()
         session.close()
 
-    def test_get_all_users(self):
+    def test_get_all_users(self, db):
         users = db.user.get_all_users()
 
         assert len(users) == 1
@@ -85,7 +82,7 @@ class TestUser:
         assert test_user.DOB == datetime.strptime("1/25/2023", "%m/%d/%Y").date()
         assert test_user.measurement_system == "imperial"
 
-    def test_get_user_by_id(self):
+    def test_get_user_by_id(self, db):
         test_user = db.user.get_user_by_id(1)
 
         assert test_user.id == 1
@@ -96,7 +93,7 @@ class TestUser:
         assert test_user.measurement_system == "imperial"
         assert db.user.get_user_by_id(23424234) is None
 
-    def test_get_user_by_username(self):
+    def test_get_user_by_username(self, db):
         test_user = db.user.get_user_by_username("testuser2023")
 
         assert test_user.id == 1
@@ -107,18 +104,18 @@ class TestUser:
         assert test_user.measurement_system == "imperial"
         assert db.user.get_user_by_username("asdf") is None
 
-    def test_change_username_by_id(self):
+    def test_change_username_by_id(self, db):
         user_ = db.user.change_username_by_id(1, "newusername23")
 
         session = db.Session()
 
         test_user = (
-            session.query(common.User)
-            .filter(common.User.username == "newusername23")
+            session.query(User)
+            .filter(User.username == "newusername23")
             .first()
         )
 
-        user_ = session.query(common.User).filter(common.User.id == 1).first()
+        user_ = session.query(User).filter(User.id == 1).first()
 
         session.close()
 
@@ -126,14 +123,14 @@ class TestUser:
         assert user_ is not None
         assert user_.username == "testuser2023"
 
-    def test_set_user_for_deletion(self):
+    def test_set_user_for_deletion(self, db):
         ## TODO: adjust methods so that all associated data is also deleted
         ## TODO: create test that adjust the date to 1 minute from now and then test to see if user and all user data is deleted
         user_id = 1
         db.user.set_user_for_deletion(user_id)
 
         session = db.Session()
-        test_user = session.query(common.User).filter(common.User.id == user_id).first()
+        test_user = session.query(User).filter(User.id == user_id).first()
         session.close()
 
         assert test_user.deletion_date.date() == (
@@ -142,7 +139,7 @@ class TestUser:
 
 
 class TestMeasurement:
-    def test_add_measurement(self):
+    def test_add_measurement(self, db):
         session = db.Session()
 
         db.measurement.add_measurement(1, None, height=60, body_weight=125)
@@ -156,7 +153,7 @@ class TestMeasurement:
         assert test_measurement.body_weight == 125
         assert test_measurement.user_id == 1
 
-    def test_get_all_measurements_by_user(self):
+    def test_get_all_measurements_by_user(self, db):
         user_id = 1
 
         db.measurement.add_measurement(
@@ -191,7 +188,7 @@ class TestMeasurement:
         assert max(body_weights) == max(query_body_weights)
         assert min(body_weights) == min(query_body_weights)
 
-    def test_get_all_measurements_by_user_by_date(self):
+    def test_get_all_measurements_by_user_by_date(self, db):
         start_time = (datetime.utcnow() + timedelta(days=-120)).date()
         end_time = (datetime.utcnow() + timedelta(days=-59)).date()
 
@@ -210,7 +207,7 @@ class TestMeasurement:
 
         assert len(measurements) == len(query_measurements)
 
-    def test_get_latest_measurement_by_user(self):
+    def test_get_latest_measurement_by_user(self, db):
         latest = db.measurement.get_latest_measurement_by_user(1)
 
         measurement_times = [
@@ -220,7 +217,7 @@ class TestMeasurement:
 
         assert latest.measurement_time == latest_query
 
-    def test_get_measurement_by_measurement(self):
+    def test_get_measurement_by_measurement(self, db):
         session = db.Session()
 
         measurements = db.measurement.get_measurement_by_measurements(
@@ -253,7 +250,7 @@ class TestMeasurement:
 
         assert len(measurements) == 2
 
-    def test_get_measurement_by_id(self):
+    def test_get_measurement_by_id(self, db):
         session = db.Session()
         measurement = db.measurement.get_measurement_by_id(1)
 
@@ -266,7 +263,7 @@ class TestMeasurement:
         assert measurement.height == query_measurement.height
         assert measurement.body_weight == query_measurement.body_weight
 
-    def test_edit_measurement(self):
+    def test_edit_measurement(self, db):
         db.measurement.edit_measurement(
             7, measurement_time=datetime.utcnow() + timedelta(days=-10), body_weight=127
         )
@@ -283,7 +280,7 @@ class TestMeasurement:
             == (datetime.utcnow() + timedelta(days=-10)).date()
         )
 
-    def test_change_measurement_system(self):
+    def test_change_measurement_system(self, db):
         measurements = db.measurement.get_all_measurement_by_user(1)
 
         db.measurement.change_measurement_system(1, 1)
@@ -312,7 +309,7 @@ class TestMeasurement:
 
 
 class TestRoutine:
-    def test_add_routine(self):
+    def test_add_routine(self, db):
         user_id = 1
         routine_name = "TEST ROUTINE"
         num_days = 4
@@ -332,7 +329,7 @@ class TestRoutine:
         assert routine.num_days == num_days
         assert routine.is_current is True
 
-    def test_get_all_user_routines(self):
+    def test_get_all_user_routines(self, db):
         routine = db.routine.get_all_user_routines(1)
 
         assert len(routine) == 1
@@ -343,7 +340,7 @@ class TestRoutine:
         assert routine.routine_name == "TEST ROUTINE"
         assert routine.num_days == 4
 
-    def test_get_routine_by_id(self):
+    def test_get_routine_by_id(self, db):
         routine = db.routine.get_routine_by_id(1)
 
         assert isinstance(routine, common.Routine)
@@ -351,7 +348,7 @@ class TestRoutine:
         assert routine.routine_name == "TEST ROUTINE"
         assert routine.num_days == 4
 
-    def test_edit_routine(self):
+    def test_edit_routine(self, db):
         db.routine.edit_routine(1, routine_name="CHANGED ROUTINE NAME", num_days=5)
 
         routine = db.routine.get_routine_by_id(1)
@@ -360,7 +357,7 @@ class TestRoutine:
         assert routine.routine_name == "CHANGED ROUTINE NAME"
         assert routine.num_days == 5
 
-    def test_make_routine_not_current(self):
+    def test_make_routine_not_current(self, db):
         assert db.routine.get_routine_by_id(1).is_current is True
 
         db.routine.make_routine_not_current(1)
@@ -369,7 +366,7 @@ class TestRoutine:
 
         assert routine.is_current is False
 
-    def test_make_routine_current(self):
+    def test_make_routine_current(self, db):
         db.routine.add_routine(1, "NEW ROUTINE", 3)
 
         db.routine.make_routine_current(1)
@@ -382,7 +379,7 @@ class TestRoutine:
 
 
 class TestRoutineDay:
-    def test_add_routine_day(self):
+    def test_add_routine_day(self, db):
         db.routine_day.add_routine_day(1, "LEGS & GLUTES", "mon")
         db.routine_day.add_routine_day(1, "CHEST & ABS", "tue")
         db.routine_day.add_routine_day(1, "BACK & ARMS", "wed")
@@ -411,7 +408,7 @@ class TestRoutineDay:
         test_back = [d for d in days if d.routine_day_name == "BACK & ARMS"]
         assert len(test_back) == 1
 
-    def test_get_routine_day_by_id(self):
+    def test_get_routine_day_by_id(self, db):
         day = db.routine_day.get_routine_day_by_id(1)
 
         assert day.id == 1
@@ -420,7 +417,7 @@ class TestRoutineDay:
         assert day.day_of_week == "mon"
         assert day.day_idx == 0
 
-    def test_get_all_days_by_routine_id(self):
+    def test_get_all_days_by_routine_id(self, db):
         days = db.routine_day.get_days_by_routine_id(1)
 
         assert len(days) == 5
@@ -437,7 +434,7 @@ class TestRoutineDay:
         test_back = [d for d in days if d.routine_day_name == "BACK & ARMS"]
         assert len(test_back) == 1
 
-    def test_get_routine_day_by_idx(self):
+    def test_get_routine_day_by_idx(self, db):
         day = db.routine_day.get_routine_day_by_idx(1, 0)
 
         assert day.id == 1
@@ -446,7 +443,7 @@ class TestRoutineDay:
         assert day.day_of_week == "mon"
         assert day.day_idx == 0
 
-    def test_edit_routine_day(self):
+    def test_edit_routine_day(self, db):
         db.routine_day.edit_routine_day(
             1, routine_day_name="LEGS & BUTT", day_of_week="sun"
         )
@@ -461,7 +458,7 @@ class TestRoutineDay:
 
 
 class TestExercise:
-    def test_add_exercise(self):
+    def test_add_exercise(self, db):
         exercise_name = "bodyweight squat"
         reference_link = "www.test.com"
         body_part = "upper_legs"
@@ -484,7 +481,7 @@ class TestExercise:
         assert secondary_body_part == query_exercise.secondary_body_part
         assert rep_type == query_exercise.rep_type
 
-    def test_add_duplicate_exercise(self):
+    def test_add_duplicate_exercise(self, db):
         exercise_name = "bodyweight squat"
         reference_link = "www.test.com"
         body_part = "upper_legs"
@@ -505,7 +502,7 @@ class TestExercise:
         assert len(exercises) == 1
         assert isinstance(duplicate_exercise, str)
 
-    def test_get_exercise_by_id(self):
+    def test_get_exercise_by_id(self, db):
         exercise = db.exercise.get_exercise_by_id(1)
         session = db.Session()
         query_exercise = (
@@ -519,7 +516,7 @@ class TestExercise:
         assert exercise.secondary_body_part == query_exercise.secondary_body_part
         assert exercise.rep_type == query_exercise.rep_type
 
-    def test_get_exercise_by_name(self):
+    def test_get_exercise_by_name(self, db):
         exercise = db.exercise.get_exercise_by_name("bodyweight squat")
         session = db.Session()
         query_exercise = (
@@ -535,7 +532,7 @@ class TestExercise:
         assert exercise.secondary_body_part == query_exercise.secondary_body_part
         assert exercise.rep_type == query_exercise.rep_type
 
-    def test_get_exercises_by_body_part(self):
+    def test_get_exercises_by_body_part(self, db):
         body_part = "upper_legs"
         secondary_body_part = "lower_legs"
         ref_link = "test.com"
@@ -592,7 +589,7 @@ class TestExercise:
         assert len(bicep_exercises) == 1
         assert len(forearm_exercises) == 1
 
-    def test_get_exercises_match_string(self):
+    def test_get_exercises_match_string(self, db):
         squats = db.exercise.get_exercises_match_string("squat")
         press = db.exercise.get_exercises_match_string("press")
         dumbbell = db.exercise.get_exercises_match_string("dumbbell")
@@ -601,7 +598,7 @@ class TestExercise:
         assert len(press) == 5
         assert len(dumbbell) == 3
 
-    def test_edit_exercise(self):
+    def test_edit_exercise(self, db):
         name = "edit me"
         ref_link = "delete.com"
         body_part = "forearms"
@@ -625,7 +622,7 @@ class TestExercise:
         assert exercise.secondary_body_part == secondary_body_part
         assert exercise.rep_type == rep_type
 
-    def test_get_user_created_exercise(self):
+    def test_get_user_created_exercise(self, db):
         name = "user created exercise"
         ref_link = "used.com"
         body_part = "core"
@@ -640,7 +637,7 @@ class TestExercise:
 
 
 class TestRoutineExercise:
-    def test_add_routine_exercise(self):
+    def test_add_routine_exercise(self, db):
         e = db.routine_exercise.add_routine_exercise(day_id=1, exercise_id=1)
 
         assert e.exercise_idx == 0
@@ -671,14 +668,14 @@ class TestRoutineExercise:
 
         assert len(routine_exercises) == 4
 
-    def test_get_exercises_by_routine_day(self):
+    def test_get_exercises_by_routine_day(self, db):
         exercises = db.routine_exercise.get_exercises_by_routine_day_id(1)
         ex_idxs = [e.exercise_idx for e in exercises]
 
         assert len(exercises) == 4
         assert list(set(ex_idxs)) == ex_idxs
 
-    def test_get_routine_exercise_by_id(self):
+    def test_get_routine_exercise_by_id(self, db):
         exercise = db.routine_exercise.get_routine_exercise_by_id(3)
 
         assert exercise.id == 3
@@ -690,7 +687,7 @@ class TestRoutineExercise:
         assert exercise.default_time is None
         assert exercise.warmup_schema is None
 
-    def test_get_routine_exercise_by_idx(self):
+    def test_get_routine_exercise_by_idx(self, db):
         exercise = db.routine_exercise.get_routine_exercise_by_idx(1, 2)
         assert exercise.id == 3
         assert exercise.day_id == 1
@@ -701,7 +698,7 @@ class TestRoutineExercise:
         assert exercise.default_time is None
         assert exercise.warmup_schema is None
 
-    def test_edit_routine_exercise(self):
+    def test_edit_routine_exercise(self, db):
         db.routine_exercise.edit_routine_exercise(3, num_sets=5)
 
         exercise = db.routine_exercise.get_routine_exercise_by_id(3)
@@ -716,7 +713,7 @@ class TestRoutineExercise:
 
 
 class TestExerciseLog:
-    def test_add_exercise_log(self):
+    def test_add_exercise_log(self, db):
         db.exercise_log.add_log(1, datetime.utcnow(), 10)
         db.exercise_log.add_log(1, datetime.utcnow(), 10)
         db.exercise_log.add_log(1, datetime.utcnow(), 10)
@@ -730,7 +727,7 @@ class TestExerciseLog:
 
         assert len(logs) == 3
 
-    def test_get_exercise_logs_by_routine_exercise_id(self):
+    def test_get_exercise_logs_by_routine_exercise_id(self, db):
         logs = db.exercise_log.get_exercise_logs_by_routine_exercise_id(1)
 
         session = db.Session()
@@ -743,7 +740,7 @@ class TestExerciseLog:
 
         assert len(logs) == len(query_logs)
 
-    def test_get_exercise_log_by_id(self):
+    def test_get_exercise_log_by_id(self, db):
         log = db.exercise_log.get_exercise_log_by_id(1)
 
         session = db.Session()
@@ -759,7 +756,7 @@ class TestExerciseLog:
         assert log.num_reps == query_log.num_reps
         assert log.time_duration == query_log.time_duration
 
-    def test_get_exercise_log_by_set(self):
+    def test_get_exercise_log_by_set(self, db):
         log = db.exercise_log.get_exercise_log_by_set(1, 1)
 
         session = db.Session()
@@ -781,14 +778,14 @@ class TestExerciseLog:
         assert log.num_reps == query_log.num_reps
         assert log.time_duration == query_log.time_duration
 
-    def test_edit_exercise_log(self):
+    def test_edit_exercise_log(self, db):
         db.exercise_log.edit_exercise_log(1, num_reps=9)
 
         log = db.exercise_log.get_exercise_log_by_id(1)
 
         assert log.num_reps == 9
 
-    def test_get_exercise_log_by_routine_exercise(self):
+    def test_get_exercise_log_by_routine_exercise(self, db):
         logs = db.exercise_log.get_exercise_logs_by_routine_exercise(1)
         for log in logs:
             assert log.routine_exercise_id == 1
@@ -797,7 +794,7 @@ class TestExerciseLog:
 class TestDelete:
     __test__ = False
 
-    def test_delete_user(self):
+    def test_delete_user(self, db):
         delete_user = db.user.add_user(
             "delete", "me", "delete_me", datetime.today().date(), "metric"
         )
@@ -808,7 +805,7 @@ class TestDelete:
 
         assert db.user.get_user_by_username("delete_me") is None
 
-    def test_delete_measurements(self):
+    def test_delete_measurements(self, db):
         db.measurement.delete_measurement(7)
 
         session = db.Session()
@@ -819,7 +816,7 @@ class TestDelete:
 
         assert len(query_measurements) == 0
 
-    def test_delete_all_measurements_by_user(self):
+    def test_delete_all_measurements_by_user(self, db):
         user_id = 1
         db.measurement.delete_all_measurements_by_user(user_id)
 
@@ -832,7 +829,7 @@ class TestDelete:
 
         assert len(measurements) == 0
 
-    def test_delete_routine(self):
+    def test_delete_routine(self, db):
         db.routine.delete_routine(2)
 
         session = db.Session()
@@ -841,7 +838,7 @@ class TestDelete:
 
         assert len(routine) == 0
 
-    def test_delete_day_by_id(self):
+    def test_delete_day_by_id(self, db):
         db.routine_day.delete_day_by_id(4)
 
         days = db.routine_day.get_days_by_routine_id(1)
@@ -851,7 +848,7 @@ class TestDelete:
         for n, d in enumerate(days):
             assert n == d.day_idx
 
-    def test_delete_days_by_routine_id(self):
+    def test_delete_days_by_routine_id(self, db):
         db.routine_day.delete_days_by_routine_id(1)
 
         session = db.Session()
@@ -868,7 +865,7 @@ class TestDelete:
 
         assert len(routine) == 0
 
-    def test_delete_exercise(self):
+    def test_delete_exercise(self, db):
         exercise_id = db.exercise.get_exercise_by_name("delete me").id
 
         db.exercise.delete_exercise(exercise_id)
@@ -890,7 +887,7 @@ class TestDelete:
 
         assert exercise is None
 
-    def test_delete_exercise_by_id(self):
+    def test_delete_exercise_by_id(self, db):
         db.routine_exercise.delete_exercise_by_id(3)
         exercises = db.routine_exercise.get_exercises_by_routine_day_id(1)
 
@@ -898,7 +895,7 @@ class TestDelete:
         for n, d in enumerate(exercises):
             assert n == d.exercise_idx
 
-    def test_delete_exercises_by_day_id(self):
+    def test_delete_exercises_by_day_id(self, db):
         db.routine_exercise.delete_exercises_by_day_id(1)
 
         session = db.Session()
@@ -917,7 +914,7 @@ class TestDelete:
 
         assert len(routine_day) == 0
 
-    def test_delete_exercises_by_routine_exercise_id(self):
+    def test_delete_exercises_by_routine_exercise_id(self, db):
         db.exercise_log.delete_exercises_by_routine_exercise_id(1)
 
         session = db.Session()
@@ -930,7 +927,7 @@ class TestDelete:
 
         assert len(logs) == 0
 
-    def test_delete_exercise_log_by_id(self):
+    def test_delete_exercise_log_by_id(self, db):
         num_logs_before = len(
             db.exercise_log.get_exercise_logs_by_routine_exercise_id(1)
         )

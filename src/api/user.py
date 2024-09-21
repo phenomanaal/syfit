@@ -74,7 +74,7 @@ async def get_user_by_username(
 ) -> RequestUser | None:
     token_data = auth.get_token_data(token)
     user = db.user.get_user_by_username(username)
-
+    
     if user is None:
         raise auth.credentials_exception
     elif user.username != token_data.username:
@@ -114,7 +114,6 @@ async def signup(
         )
     data = OAuth2PasswordRequestForm(username=user.username, password=str_password)
     return await login_for_access_token(form_data=data, db=db)
-
 
 @router.post("/users/token/")
 async def login_for_access_token(

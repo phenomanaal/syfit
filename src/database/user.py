@@ -10,17 +10,20 @@ class Interface(DatabaseInterface):
         session = self.Session()
         session.add(user)
 
+        
+
         try:
             session.commit()
+            user = self.get_user_by_username(user.username)
         except IntegrityError as e:
             session.rollback()
             session.close()
             if "UNIQUE constraint failed" in e.args[0]:
                 return {"message": f"username {user.username} already exists!"}
-
-        user = self.get_user_by_username(user.username)
+        
+        
         session.close()
-
+        
         return user
 
     def get_all_users(self):

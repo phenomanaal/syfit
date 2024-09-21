@@ -1,20 +1,11 @@
 ## reset test database
 import json
-from fastapi.testclient import TestClient
-from src.database.syfit import Syfit
 from src.database import common
-import src.config as config
+from src.config import config
 from src.api.auth import get_token_data
-from src.api.main import app
-
-client = TestClient(app)
-
-conn_string = config.config.get("DATABASE", "CONN_STRING")
-db = Syfit(conn_string, reset_db=True)
-
 
 class TestUser:
-    def test_signup_admin(self):
+    def test_signup_admin(self, db, client):
         data = {
             "first_name": "Admin",
             "last_name": "User",
@@ -24,14 +15,17 @@ class TestUser:
             "DOB": "1/1/2001",
             "measurement_system": "imperial",
         }
+
+        headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "api_key": config["API"]["API_KEY"],
+            }
         post_admin = client.post(
             "/users/signup",
             data=data,
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "api_key": config.config["API"]["API_KEY"],
-            },
+            headers=headers,
         )
+
         token = get_token_data(
             json.loads(post_admin.content.decode()).get("access_token")
         )
@@ -48,7 +42,7 @@ class TestUser:
         assert admin is not None
         assert token.id == admin.id
 
-    def test_signup_user(self):
+    def test_signup_user(self, db, client):
         data = {
             "first_name": "Test",
             "last_name": "User",
@@ -63,7 +57,7 @@ class TestUser:
             data=data,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "api_key": config.config["API"]["API_KEY"],
+                "api_key": config["API"]["API_KEY"],
             },
         )
         token = get_token_data(
@@ -78,10 +72,11 @@ class TestUser:
         )
         session.close()
 
+        assert post_user.status_code == 200
         assert user is not None
         assert token.id == user.id
 
-    def test_signup_duplicate_user(self):
+    def test_signup_duplicate_user(self, db, client):
         data = {
             "first_name": "Test",
             "last_name": "User",
@@ -96,7 +91,7 @@ class TestUser:
             data=data,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "api_key": config.config["API"]["API_KEY"],
+                "api_key": config["API"]["API_KEY"],
             },
         )
         assert post_user.status_code == 409
