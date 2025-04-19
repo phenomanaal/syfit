@@ -77,13 +77,13 @@ class TelCountryCode(Base):
         return name
 
     @validates("tele_code")
-    def validate_name(self, _, tele_code: str) -> str:
+    def validate_tele_code(self, _, tele_code: str) -> str:
         if tele_code not in CountryCode().get_all_country_codes():
             raise ValueError("invalid country code")
         return tele_code
 
     @validates("short_name")
-    def validate_name(self, _, short_name) -> str:
+    def validate_short_name(self, _, short_name) -> str:
         if short_name not in CountryCode().get_all_country_short_names():
             raise ValueError("invalid country short name")
         return short_name

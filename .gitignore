@@ -40,3 +40,4 @@ local.properties
 # Default ignored files
 /shelf/
 /workspace.xml
+.venv/
